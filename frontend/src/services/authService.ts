@@ -41,3 +41,45 @@ export async function register(
     throw new Error("Registrierung fehlgeschlagen.");
   }
 }
+
+export async function login(
+  email: string,
+  password: string
+): Promise<void> {
+  const response = await fetch(
+    "http://localhost:8080/api/auth/login",
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      credentials: "include",
+      body: JSON.stringify({
+        email,
+        password,
+      }),
+    }
+  );
+
+  if (!response.ok) {
+    const errorData = await response.json();
+
+    throw new Error(
+      errorData.message ?? "Anmeldung fehlgeschlagen."
+    );
+  }
+}
+
+export async function logout(): Promise<void> {
+  const response = await fetch(
+    "http://localhost:8080/api/auth/logout",
+    {
+      method: "POST",
+      credentials: "include",
+    }
+  );
+
+  if (!response.ok) {
+    throw new Error("Abmeldung fehlgeschlagen.");
+  }
+}
