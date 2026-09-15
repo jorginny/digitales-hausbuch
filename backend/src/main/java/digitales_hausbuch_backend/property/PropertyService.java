@@ -4,6 +4,8 @@ import digitales_hausbuch_backend.user.User;
 import digitales_hausbuch_backend.user.UserRepository;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
+
 @Service
 public class PropertyService {
 
@@ -44,5 +46,86 @@ public class PropertyService {
                 savedProperty.getAddress(),
                 savedProperty.getCreatedAt()
         );
+    }
+
+    public PropertyResponse getProperty(
+            Long propertyId,
+            String userEmail) {
+
+        User owner = userRepository.findByEmail(userEmail)
+                .orElseThrow(() ->
+                        new IllegalArgumentException(
+                                "Benutzer wurde nicht gefunden."
+                        )
+                );
+
+        Property property = propertyRepository
+                .findByIdAndOwner(propertyId, owner)
+                .orElseThrow(() ->
+                        new PropertyNotFoundException (
+                                "Immobilie wurde nicht gefunden."
+                        )
+                );
+
+        return new PropertyResponse(
+                property.getId(),
+                property.getName(),
+                property.getAddress(),
+                property.getCreatedAt()
+        );
+    }
+
+    public PropertyResponse updateProperty(
+            Long propertyId,
+            PropertyRequest request,
+            String userEmail) {
+
+        User owner = userRepository.findByEmail(userEmail)
+                .orElseThrow(() ->
+                        new IllegalArgumentException(
+                                "Benutzer wurde nicht gefunden."
+                        )
+                );
+
+        Property property = propertyRepository
+                .findByIdAndOwner(propertyId, owner)
+                .orElseThrow(() ->
+                        new PropertyNotFoundException (
+                                "Immobilie wurde nicht gefunden."
+                        )
+                );
+
+        property.setName(request.name());
+        property.setAddress(request.address());
+
+        Property savedProperty =
+                propertyRepository.save(property);
+
+        return new PropertyResponse(
+                savedProperty.getId(),
+                savedProperty.getName(),
+                savedProperty.getAddress(),
+                savedProperty.getCreatedAt()
+        );
+    }
+
+    public List<PropertyResponse> getPropertiesForUser(String userEmail) {
+
+        User owner = userRepository.findByEmail(userEmail)
+                .orElseThrow(() ->
+                        new IllegalArgumentException(
+                                "Benutzer wurde nicht gefunden."
+                        )
+                );
+
+        return propertyRepository.findByOwner(owner)
+                .stream()
+                .map(property -> new PropertyResponse(
+                        property.getId(),
+                        property.getName(),
+                        property.getAddress(),
+                        property.getCreatedAt()
+                ))
+                .toList();
     }
 }

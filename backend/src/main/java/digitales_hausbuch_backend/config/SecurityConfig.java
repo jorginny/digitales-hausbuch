@@ -40,7 +40,7 @@ public class SecurityConfig {
                                 "/api/auth/register",
                                 "/api/auth/login",
                                 "/api/auth/logout",
-                                "/api/properties"
+                                "/api/properties/**"
                         )
                 );
 

@@ -30,6 +30,10 @@ function DashboardPage() {
       <Link to="/properties/new">
         Immobilie anlegen
         </Link>
+
+      <Link to="/properties">
+        Meine Immobilien
+        </Link>  
     </div>
   );
 }

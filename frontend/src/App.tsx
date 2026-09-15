@@ -5,6 +5,9 @@ import LoginPage from "./pages/LoginPage";
 import DashboardPage from "./pages/DashboardPage";
 import ProtectedRoute from "./components/ProtectedRoute";
 import CreatePropertyPage from "./pages/CreatePropertyPage";
+import PropertyDetailPage from "./pages/PropertyDetailPage";
+import PropertyListPage from "./pages/PropertyListPage";
+
 
 function App() {
   return (
@@ -31,6 +34,24 @@ function App() {
             <CreatePropertyPage />
           </ProtectedRoute>     
         }
+        />
+
+        <Route
+          path="/properties/:id"
+          element={
+          <ProtectedRoute>
+            <PropertyDetailPage />
+          </ProtectedRoute>
+        }
+        />
+
+        <Route
+          path="/properties"
+          element={
+            <ProtectedRoute>
+              <PropertyListPage />
+            </ProtectedRoute>
+          }
         />
 
     </Routes>
