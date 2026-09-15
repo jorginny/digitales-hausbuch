@@ -4,6 +4,7 @@ import RegisterPage from "./pages/RegisterPage";
 import LoginPage from "./pages/LoginPage";
 import DashboardPage from "./pages/DashboardPage";
 import ProtectedRoute from "./components/ProtectedRoute";
+import CreatePropertyPage from "./pages/CreatePropertyPage";
 
 function App() {
   return (
@@ -21,7 +22,17 @@ function App() {
             <DashboardPage />
           </ProtectedRoute>
         }
-      />
+        />
+
+      <Route
+        path="/properties/new"
+        element={
+          <ProtectedRoute>
+            <CreatePropertyPage />
+          </ProtectedRoute>     
+        }
+        />
+
     </Routes>
   );
 }

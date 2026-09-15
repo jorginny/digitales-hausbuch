@@ -1,5 +1,6 @@
 import { logout } from "../services/authService";
 import { useNavigate } from "react-router";
+import { Link } from "react-router";
 
 
 
@@ -25,6 +26,10 @@ function DashboardPage() {
       <button onClick={handleLogout}>
         Abmelden
       </button>
+
+      <Link to="/properties/new">
+        Immobilie anlegen
+        </Link>
     </div>
   );
 }
