@@ -1,10 +1,19 @@
 import { useEffect, useState } from "react";
 import { useParams } from "react-router";
+
 import {
   getProperty,
   updateProperty,
   type PropertyResponse,
 } from "../services/propertyService";
+
+import {
+  getRooms,
+  createRoom,
+  updateRoom,
+  deleteRoom,
+  type RoomResponse,
+} from "../services/roomService";
 
 function PropertyDetailPage() {
   const { id } = useParams();
@@ -17,6 +26,15 @@ function PropertyDetailPage() {
 
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
+
+  const [rooms, setRooms] = useState<RoomResponse[]>([]);
+  const [newRoomName, setNewRoomName] = useState("");
+
+  const [editingRoomId, setEditingRoomId] =
+    useState<number | null>(null);
+
+  const [editingRoomName, setEditingRoomName] =
+    useState("");
 
   useEffect(() => {
     const loadProperty = async () => {
@@ -32,6 +50,11 @@ function PropertyDetailPage() {
         setProperty(loadedProperty);
         setName(loadedProperty.name);
         setAddress(loadedProperty.address ?? "");
+
+        const loadedRooms =
+          await getRooms(Number(id));
+
+        setRooms(loadedRooms);
       } catch (error) {
         if (error instanceof Error) {
           setError(error.message);
@@ -62,7 +85,108 @@ function PropertyDetailPage() {
         });
 
       setProperty(updatedProperty);
-      setMessage("Immobilie wurde erfolgreich aktualisiert.");
+
+      setMessage(
+        "Immobilie wurde erfolgreich aktualisiert."
+      );
+    } catch (error) {
+      if (error instanceof Error) {
+        setError(error.message);
+      }
+    }
+  };
+
+  const handleCreateRoom = async (
+    event: React.SubmitEvent<HTMLFormElement>
+  ) => {
+    event.preventDefault();
+
+    if (!id) {
+      return;
+    }
+
+    try {
+      const createdRoom = await createRoom(
+        Number(id),
+        {
+          name: newRoomName,
+        }
+      );
+
+      setRooms((currentRooms) => [
+        ...currentRooms,
+        createdRoom,
+      ]);
+
+      setNewRoomName("");
+    } catch (error) {
+      if (error instanceof Error) {
+        setError(error.message);
+      }
+    }
+  };
+
+  const handleEditRoom = (room: RoomResponse) => {
+    setEditingRoomId(room.id);
+    setEditingRoomName(room.name);
+  };
+
+  const handleUpdateRoom = async (
+    roomId: number
+  ) => {
+    if (!id) {
+      return;
+    }
+
+    try {
+      const updatedRoom = await updateRoom(
+        Number(id),
+        roomId,
+        {
+          name: editingRoomName,
+        }
+      );
+
+      setRooms((currentRooms) =>
+        currentRooms.map((room) =>
+          room.id === roomId
+            ? updatedRoom
+            : room
+        )
+      );
+
+      setEditingRoomId(null);
+      setEditingRoomName("");
+    } catch (error) {
+      if (error instanceof Error) {
+        setError(error.message);
+      }
+    }
+  };
+
+  const handleDeleteRoom = async (
+    roomId: number
+  ) => {
+    if (!id) {
+      return;
+    }
+
+    const confirmed = window.confirm(
+    "Möchtest du diesen Raum wirklich löschen?"
+    );
+
+    if (!confirmed) {
+      return;
+  }
+
+    try {
+      await deleteRoom(Number(id), roomId);
+
+      setRooms((currentRooms) =>
+        currentRooms.filter(
+          (room) => room.id !== roomId
+        )
+      );
     } catch (error) {
       if (error instanceof Error) {
         setError(error.message);
@@ -117,6 +241,92 @@ function PropertyDetailPage() {
           </button>
         </form>
       )}
+
+      <h2>Räume</h2>
+
+      {rooms.length === 0 ? (
+        <p>Noch keine Räume angelegt.</p>
+      ) : (
+        <ul>
+          {rooms.map((room) => (
+            <li key={room.id}>
+              {editingRoomId === room.id ? (
+                <>
+                  <input
+                    type="text"
+                    value={editingRoomName}
+                    onChange={(event) =>
+                      setEditingRoomName(
+                        event.target.value
+                      )
+                    }
+                  />
+
+                  <button
+                    type="button"
+                    onClick={() =>
+                      handleUpdateRoom(room.id)
+                    }
+                  >
+                    Speichern
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setEditingRoomId(null);
+                      setEditingRoomName("");
+                    }}
+                  >
+                    Abbrechen
+                  </button>
+                </>
+              ) : (
+                <>
+                  <span>{room.name}</span>
+
+                  <button
+                    type="button"
+                    onClick={() =>
+                      handleEditRoom(room)
+                    }
+                  >
+                    Bearbeiten
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() =>
+                      handleDeleteRoom(room.id)
+                    }
+                  >
+                    Löschen
+                  </button>
+                </>
+              )}
+            </li>
+          ))}
+        </ul>
+      )}
+
+      <form onSubmit={handleCreateRoom}>
+        <label htmlFor="roomName">
+          Neuer Raum
+        </label>
+
+        <input
+          id="roomName"
+          type="text"
+          value={newRoomName}
+          onChange={(event) =>
+            setNewRoomName(event.target.value)
+          }
+        />
+
+        <button type="submit">
+          Raum anlegen
+        </button>
+      </form>
 
       {message && <p>{message}</p>}
     </div>
