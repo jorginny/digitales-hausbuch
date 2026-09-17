@@ -23,6 +23,12 @@ import {
   type HouseholdObjectResponse,
 } from "../services/householdObjectService";
 
+import {
+  createMaintenanceTask,
+  getMaintenanceTasks,
+  type MaintenanceTaskResponse,
+} from "../services/maintenanceTaskService";
+
 function PropertyDetailPage() {
   const { id } = useParams();
 
@@ -61,7 +67,7 @@ function PropertyDetailPage() {
   const [objectPurchaseDate, setObjectPurchaseDate] =
     useState("");
 
-  // Bearbeiten eines HouseholdObjects
+  // HouseholdObject bearbeiten
   const [editingObjectId, setEditingObjectId] =
     useState<number | null>(null);
 
@@ -87,6 +93,19 @@ function PropertyDetailPage() {
     editingObjectPurchaseDate,
     setEditingObjectPurchaseDate,
   ] = useState("");
+
+  // Wartungsaufgaben
+  const [selectedObjectId, setSelectedObjectId] =
+    useState<number | null>(null);
+
+  const [maintenanceTasks, setMaintenanceTasks] =
+    useState<MaintenanceTaskResponse[]>([]);
+
+  const [taskTitle, setTaskTitle] = useState("");
+  const [taskDescription, setTaskDescription] =
+    useState("");
+  const [taskDueDate, setTaskDueDate] =
+    useState("");
 
   useEffect(() => {
     const loadProperty = async () => {
@@ -258,6 +277,8 @@ function PropertyDetailPage() {
       if (selectedRoomId === roomId) {
         setSelectedRoomId(null);
         setHouseholdObjects([]);
+        setSelectedObjectId(null);
+        setMaintenanceTasks([]);
       }
 
       setMessage(
@@ -349,23 +370,16 @@ function PropertyDetailPage() {
     householdObject: HouseholdObjectResponse
   ) => {
     setEditingObjectId(householdObject.id);
-
-    setEditingObjectName(
-      householdObject.name
-    );
-
+    setEditingObjectName(householdObject.name);
     setEditingObjectDescription(
       householdObject.description ?? ""
     );
-
     setEditingObjectManufacturer(
       householdObject.manufacturer ?? ""
     );
-
     setEditingObjectModel(
       householdObject.model ?? ""
     );
-
     setEditingObjectPurchaseDate(
       householdObject.purchaseDate ?? ""
     );
@@ -393,8 +407,7 @@ function PropertyDetailPage() {
               editingObjectDescription,
             manufacturer:
               editingObjectManufacturer,
-            model:
-              editingObjectModel,
+            model: editingObjectModel,
             purchaseDate:
               editingObjectPurchaseDate ||
               undefined,
@@ -459,8 +472,9 @@ function PropertyDetailPage() {
         )
       );
 
-      if (editingObjectId === objectId) {
-        setEditingObjectId(null);
+      if (selectedObjectId === objectId) {
+        setSelectedObjectId(null);
+        setMaintenanceTasks([]);
       }
 
       setMessage(
@@ -473,10 +487,85 @@ function PropertyDetailPage() {
     }
   };
 
+  const loadMaintenanceTasks = async (
+    objectId: number
+  ) => {
+    if (!id || selectedRoomId === null) {
+      return;
+    }
+
+    setError("");
+
+    try {
+      const loadedTasks =
+        await getMaintenanceTasks(
+          Number(id),
+          selectedRoomId,
+          objectId
+        );
+
+      setMaintenanceTasks(loadedTasks);
+    } catch (error) {
+      if (error instanceof Error) {
+        setError(error.message);
+      }
+    }
+  };
+
+  const handleCreateMaintenanceTask = async (
+    event: React.SubmitEvent<HTMLFormElement>
+  ) => {
+    event.preventDefault();
+
+    if (
+      !id ||
+      selectedRoomId === null ||
+      selectedObjectId === null
+    ) {
+      setError(
+        "Bitte zuerst einen Raum und ein Objekt auswählen."
+      );
+      return;
+    }
+
+    setError("");
+    setMessage("");
+
+    try {
+      const createdTask =
+        await createMaintenanceTask(
+          Number(id),
+          selectedRoomId,
+          selectedObjectId,
+          {
+            title: taskTitle,
+            description: taskDescription,
+            dueDate:
+              taskDueDate || undefined,
+          }
+        );
+
+      setMaintenanceTasks((currentTasks) => [
+        ...currentTasks,
+        createdTask,
+      ]);
+
+      setTaskTitle("");
+      setTaskDescription("");
+      setTaskDueDate("");
+
+      setMessage(
+        "Wartungsaufgabe wurde erfolgreich angelegt."
+      );
+    } catch (error) {
+      if (error instanceof Error) {
+        setError(error.message);
+      }
+    }
+  };
+
   if (!property && !error) {
-    return (
-      <p>Immobilie wird geladen...</p>
-    );
+    return <p>Immobilie wird geladen...</p>;
   }
 
   return (
@@ -531,21 +620,16 @@ function PropertyDetailPage() {
       <h2>Räume</h2>
 
       {rooms.length === 0 ? (
-        <p>
-          Noch keine Räume angelegt.
-        </p>
+        <p>Noch keine Räume angelegt.</p>
       ) : (
         <ul>
           {rooms.map((room) => (
             <li key={room.id}>
-              {editingRoomId ===
-              room.id ? (
+              {editingRoomId === room.id ? (
                 <>
                   <input
                     type="text"
-                    value={
-                      editingRoomName
-                    }
+                    value={editingRoomName}
                     onChange={(event) =>
                       setEditingRoomName(
                         event.target.value
@@ -556,9 +640,7 @@ function PropertyDetailPage() {
                   <button
                     type="button"
                     onClick={() =>
-                      handleUpdateRoom(
-                        room.id
-                      )
+                      handleUpdateRoom(room.id)
                     }
                   >
                     Speichern
@@ -567,12 +649,8 @@ function PropertyDetailPage() {
                   <button
                     type="button"
                     onClick={() => {
-                      setEditingRoomId(
-                        null
-                      );
-                      setEditingRoomName(
-                        ""
-                      );
+                      setEditingRoomId(null);
+                      setEditingRoomName("");
                     }}
                   >
                     Abbrechen
@@ -580,16 +658,12 @@ function PropertyDetailPage() {
                 </>
               ) : (
                 <>
-                  <span>
-                    {room.name}
-                  </span>
+                  <span>{room.name}</span>
 
                   <button
                     type="button"
                     onClick={() =>
-                      handleEditRoom(
-                        room
-                      )
+                      handleEditRoom(room)
                     }
                   >
                     Bearbeiten
@@ -598,9 +672,7 @@ function PropertyDetailPage() {
                   <button
                     type="button"
                     onClick={() =>
-                      handleDeleteRoom(
-                        room.id
-                      )
+                      handleDeleteRoom(room.id)
                     }
                   >
                     Löschen
@@ -657,13 +729,17 @@ function PropertyDetailPage() {
             if (value === "") {
               setSelectedRoomId(null);
               setHouseholdObjects([]);
-              setEditingObjectId(null);
+              setSelectedObjectId(null);
+              setMaintenanceTasks([]);
               return;
             }
 
             const roomId = Number(value);
 
             setSelectedRoomId(roomId);
+            setHouseholdObjects([]);
+            setSelectedObjectId(null);
+            setMaintenanceTasks([]);
             setEditingObjectId(null);
 
             loadHouseholdObjects(roomId);
@@ -702,11 +778,7 @@ function PropertyDetailPage() {
             <ul>
               {householdObjects.map(
                 (householdObject) => (
-                  <li
-                    key={
-                      householdObject.id
-                    }
-                  >
+                  <li key={householdObject.id}>
                     {editingObjectId ===
                     householdObject.id ? (
                       <>
@@ -720,9 +792,7 @@ function PropertyDetailPage() {
                             value={
                               editingObjectName
                             }
-                            onChange={(
-                              event
-                            ) =>
+                            onChange={(event) =>
                               setEditingObjectName(
                                 event.target.value
                               )
@@ -740,9 +810,7 @@ function PropertyDetailPage() {
                             value={
                               editingObjectDescription
                             }
-                            onChange={(
-                              event
-                            ) =>
+                            onChange={(event) =>
                               setEditingObjectDescription(
                                 event.target.value
                               )
@@ -760,9 +828,7 @@ function PropertyDetailPage() {
                             value={
                               editingObjectManufacturer
                             }
-                            onChange={(
-                              event
-                            ) =>
+                            onChange={(event) =>
                               setEditingObjectManufacturer(
                                 event.target.value
                               )
@@ -780,9 +846,7 @@ function PropertyDetailPage() {
                             value={
                               editingObjectModel
                             }
-                            onChange={(
-                              event
-                            ) =>
+                            onChange={(event) =>
                               setEditingObjectModel(
                                 event.target.value
                               )
@@ -800,9 +864,7 @@ function PropertyDetailPage() {
                             value={
                               editingObjectPurchaseDate
                             }
-                            onChange={(
-                              event
-                            ) =>
+                            onChange={(event) =>
                               setEditingObjectPurchaseDate(
                                 event.target.value
                               )
@@ -1013,6 +1075,198 @@ function PropertyDetailPage() {
               Objekt anlegen
             </button>
           </form>
+        </>
+      )}
+
+      <hr />
+
+      <h2>Wartungsaufgaben</h2>
+
+      {selectedRoomId === null ? (
+        <p>
+          Bitte zuerst einen Raum auswählen.
+        </p>
+      ) : (
+        <>
+          <div>
+            <label htmlFor="maintenanceObject">
+              Objekt auswählen
+            </label>
+
+            <select
+              id="maintenanceObject"
+              value={selectedObjectId ?? ""}
+              onChange={(event) => {
+                const value =
+                  event.target.value;
+
+                if (value === "") {
+                  setSelectedObjectId(null);
+                  setMaintenanceTasks([]);
+                  return;
+                }
+
+                const objectId =
+                  Number(value);
+
+                setSelectedObjectId(
+                  objectId
+                );
+
+                setMaintenanceTasks([]);
+
+                loadMaintenanceTasks(
+                  objectId
+                );
+              }}
+            >
+              <option value="">
+                Objekt auswählen
+              </option>
+
+              {householdObjects.map(
+                (householdObject) => (
+                  <option
+                    key={
+                      householdObject.id
+                    }
+                    value={
+                      householdObject.id
+                    }
+                  >
+                    {
+                      householdObject.name
+                    }
+                  </option>
+                )
+              )}
+            </select>
+          </div>
+
+          {selectedObjectId === null ? (
+            <p>
+              Bitte zuerst ein Objekt
+              auswählen.
+            </p>
+          ) : (
+            <>
+              <h3>
+                Aufgaben des ausgewählten
+                Objekts
+              </h3>
+
+              {maintenanceTasks.length ===
+              0 ? (
+                <p>
+                  Noch keine
+                  Wartungsaufgaben
+                  vorhanden.
+                </p>
+              ) : (
+                <ul>
+                  {maintenanceTasks.map(
+                    (task) => (
+                      <li key={task.id}>
+                        <p>
+                          <strong>
+                            {task.title}
+                          </strong>
+                        </p>
+
+                        <p>
+                          Beschreibung:{" "}
+                          {task.description ||
+                            "-"}
+                        </p>
+
+                        <p>
+                          Fällig am:{" "}
+                          {task.dueDate ||
+                            "-"}
+                        </p>
+
+                        <p>
+                          Status:{" "}
+                          {task.completed
+                            ? "Erledigt"
+                            : "Offen"}
+                        </p>
+                      </li>
+                    )
+                  )}
+                </ul>
+              )}
+
+              <h3>
+                Wartungsaufgabe anlegen
+              </h3>
+
+              <form
+                onSubmit={
+                  handleCreateMaintenanceTask
+                }
+              >
+                <div>
+                  <label htmlFor="taskTitle">
+                    Titel
+                  </label>
+
+                  <input
+                    id="taskTitle"
+                    type="text"
+                    value={taskTitle}
+                    onChange={(event) =>
+                      setTaskTitle(
+                        event.target.value
+                      )
+                    }
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label htmlFor="taskDescription">
+                    Beschreibung
+                  </label>
+
+                  <input
+                    id="taskDescription"
+                    type="text"
+                    value={
+                      taskDescription
+                    }
+                    onChange={(event) =>
+                      setTaskDescription(
+                        event.target.value
+                      )
+                    }
+                  />
+                </div>
+
+                <div>
+                  <label htmlFor="taskDueDate">
+                    Fälligkeitsdatum
+                  </label>
+
+                  <input
+                    id="taskDueDate"
+                    type="date"
+                    value={taskDueDate}
+                    onChange={(event) =>
+                      setTaskDueDate(
+                        event.target.value
+                      )
+                    }
+                  />
+                </div>
+
+                <button type="submit">
+                  Wartungsaufgabe
+                  anlegen
+                </button>
+              </form>
+            </>
+          )}
         </>
       )}
     </div>
