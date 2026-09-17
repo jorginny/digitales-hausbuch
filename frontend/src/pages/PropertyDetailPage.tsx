@@ -17,6 +17,9 @@ import {
 
 import {
   createHouseholdObject,
+  getHouseholdObjects,
+  updateHouseholdObject,
+  type HouseholdObjectResponse,
 } from "../services/householdObjectService";
 
 function PropertyDetailPage() {
@@ -45,11 +48,44 @@ function PropertyDetailPage() {
   const [selectedRoomId, setSelectedRoomId] =
     useState<number | null>(null);
 
+  const [householdObjects, setHouseholdObjects] =
+    useState<HouseholdObjectResponse[]>([]);
+
   const [objectName, setObjectName] = useState("");
-  const [objectDescription, setObjectDescription] = useState("");
-  const [objectManufacturer, setObjectManufacturer] = useState("");
+  const [objectDescription, setObjectDescription] =
+    useState("");
+  const [objectManufacturer, setObjectManufacturer] =
+    useState("");
   const [objectModel, setObjectModel] = useState("");
-  const [objectPurchaseDate, setObjectPurchaseDate] = useState("");
+  const [objectPurchaseDate, setObjectPurchaseDate] =
+    useState("");
+
+  // Bearbeiten eines HouseholdObjects
+  const [editingObjectId, setEditingObjectId] =
+    useState<number | null>(null);
+
+  const [editingObjectName, setEditingObjectName] =
+    useState("");
+
+  const [
+    editingObjectDescription,
+    setEditingObjectDescription,
+  ] = useState("");
+
+  const [
+    editingObjectManufacturer,
+    setEditingObjectManufacturer,
+  ] = useState("");
+
+  const [
+    editingObjectModel,
+    setEditingObjectModel,
+  ] = useState("");
+
+  const [
+    editingObjectPurchaseDate,
+    setEditingObjectPurchaseDate,
+  ] = useState("");
 
   useEffect(() => {
     const loadProperty = async () => {
@@ -120,16 +156,14 @@ function PropertyDetailPage() {
       return;
     }
 
-    setError("");
     setMessage("");
+    setError("");
 
     try {
-      const createdRoom = await createRoom(
-        Number(id),
-        {
+      const createdRoom =
+        await createRoom(Number(id), {
           name: newRoomName,
-        }
-      );
+        });
 
       setRooms((currentRooms) => [
         ...currentRooms,
@@ -160,8 +194,8 @@ function PropertyDetailPage() {
       return;
     }
 
-    setError("");
     setMessage("");
+    setError("");
 
     try {
       const updatedRoom = await updateRoom(
@@ -208,8 +242,8 @@ function PropertyDetailPage() {
       return;
     }
 
-    setError("");
     setMessage("");
+    setError("");
 
     try {
       await deleteRoom(Number(id), roomId);
@@ -220,9 +254,39 @@ function PropertyDetailPage() {
         )
       );
 
+      // Falls genau dieser Raum ausgewählt war:
+      if (selectedRoomId === roomId) {
+        setSelectedRoomId(null);
+        setHouseholdObjects([]);
+      }
+
       setMessage(
         "Raum wurde erfolgreich gelöscht."
       );
+    } catch (error) {
+      if (error instanceof Error) {
+        setError(error.message);
+      }
+    }
+  };
+
+  const loadHouseholdObjects = async (
+    roomId: number
+  ) => {
+    if (!id) {
+      return;
+    }
+
+    setError("");
+
+    try {
+      const loadedObjects =
+        await getHouseholdObjects(
+          Number(id),
+          roomId
+        );
+
+      setHouseholdObjects(loadedObjects);
     } catch (error) {
       if (error instanceof Error) {
         setError(error.message);
@@ -236,26 +300,34 @@ function PropertyDetailPage() {
     event.preventDefault();
 
     if (!id || selectedRoomId === null) {
-      setError("Bitte zuerst einen Raum auswählen.");
+      setError(
+        "Bitte zuerst einen Raum auswählen."
+      );
       return;
     }
 
-    setError("");
     setMessage("");
+    setError("");
 
     try {
-      await createHouseholdObject(
-        Number(id),
-        selectedRoomId,
-        {
-          name: objectName,
-          description: objectDescription,
-          manufacturer: objectManufacturer,
-          model: objectModel,
-          purchaseDate:
-            objectPurchaseDate || undefined,
-        }
-      );
+      const createdObject =
+        await createHouseholdObject(
+          Number(id),
+          selectedRoomId,
+          {
+            name: objectName,
+            description: objectDescription,
+            manufacturer: objectManufacturer,
+            model: objectModel,
+            purchaseDate:
+              objectPurchaseDate || undefined,
+          }
+        );
+
+      setHouseholdObjects((currentObjects) => [
+        ...currentObjects,
+        createdObject,
+      ]);
 
       setObjectName("");
       setObjectDescription("");
@@ -273,8 +345,92 @@ function PropertyDetailPage() {
     }
   };
 
+  const handleEditHouseholdObject = (
+    householdObject: HouseholdObjectResponse
+  ) => {
+    setEditingObjectId(householdObject.id);
+
+    setEditingObjectName(
+      householdObject.name
+    );
+
+    setEditingObjectDescription(
+      householdObject.description ?? ""
+    );
+
+    setEditingObjectManufacturer(
+      householdObject.manufacturer ?? ""
+    );
+
+    setEditingObjectModel(
+      householdObject.model ?? ""
+    );
+
+    setEditingObjectPurchaseDate(
+      householdObject.purchaseDate ?? ""
+    );
+  };
+
+  const handleUpdateHouseholdObject = async (
+    objectId: number
+  ) => {
+    if (!id || selectedRoomId === null) {
+      return;
+    }
+
+    setMessage("");
+    setError("");
+
+    try {
+      const updatedObject =
+        await updateHouseholdObject(
+          Number(id),
+          selectedRoomId,
+          objectId,
+          {
+            name: editingObjectName,
+            description:
+              editingObjectDescription,
+            manufacturer:
+              editingObjectManufacturer,
+            model:
+              editingObjectModel,
+            purchaseDate:
+              editingObjectPurchaseDate ||
+              undefined,
+          }
+        );
+
+      setHouseholdObjects((currentObjects) =>
+        currentObjects.map(
+          (householdObject) =>
+            householdObject.id === objectId
+              ? updatedObject
+              : householdObject
+        )
+      );
+
+      setEditingObjectId(null);
+      setEditingObjectName("");
+      setEditingObjectDescription("");
+      setEditingObjectManufacturer("");
+      setEditingObjectModel("");
+      setEditingObjectPurchaseDate("");
+
+      setMessage(
+        "Objekt wurde erfolgreich aktualisiert."
+      );
+    } catch (error) {
+      if (error instanceof Error) {
+        setError(error.message);
+      }
+    }
+  };
+
   if (!property && !error) {
-    return <p>Immobilie wird geladen...</p>;
+    return (
+      <p>Immobilie wird geladen...</p>
+    );
   }
 
   return (
@@ -282,6 +438,7 @@ function PropertyDetailPage() {
       <h1>Immobilie bearbeiten</h1>
 
       {error && <p>{error}</p>}
+      {message && <p>{message}</p>}
 
       {property && (
         <form onSubmit={handleSubmit}>
@@ -310,7 +467,9 @@ function PropertyDetailPage() {
               type="text"
               value={address}
               onChange={(event) =>
-                setAddress(event.target.value)
+                setAddress(
+                  event.target.value
+                )
               }
             />
           </div>
@@ -321,19 +480,26 @@ function PropertyDetailPage() {
         </form>
       )}
 
+      <hr />
+
       <h2>Räume</h2>
 
       {rooms.length === 0 ? (
-        <p>Noch keine Räume angelegt.</p>
+        <p>
+          Noch keine Räume angelegt.
+        </p>
       ) : (
         <ul>
           {rooms.map((room) => (
             <li key={room.id}>
-              {editingRoomId === room.id ? (
+              {editingRoomId ===
+              room.id ? (
                 <>
                   <input
                     type="text"
-                    value={editingRoomName}
+                    value={
+                      editingRoomName
+                    }
                     onChange={(event) =>
                       setEditingRoomName(
                         event.target.value
@@ -344,7 +510,9 @@ function PropertyDetailPage() {
                   <button
                     type="button"
                     onClick={() =>
-                      handleUpdateRoom(room.id)
+                      handleUpdateRoom(
+                        room.id
+                      )
                     }
                   >
                     Speichern
@@ -353,8 +521,12 @@ function PropertyDetailPage() {
                   <button
                     type="button"
                     onClick={() => {
-                      setEditingRoomId(null);
-                      setEditingRoomName("");
+                      setEditingRoomId(
+                        null
+                      );
+                      setEditingRoomName(
+                        ""
+                      );
                     }}
                   >
                     Abbrechen
@@ -362,12 +534,16 @@ function PropertyDetailPage() {
                 </>
               ) : (
                 <>
-                  <span>{room.name}</span>
+                  <span>
+                    {room.name}
+                  </span>
 
                   <button
                     type="button"
                     onClick={() =>
-                      handleEditRoom(room)
+                      handleEditRoom(
+                        room
+                      )
                     }
                   >
                     Bearbeiten
@@ -376,7 +552,9 @@ function PropertyDetailPage() {
                   <button
                     type="button"
                     onClick={() =>
-                      handleDeleteRoom(room.id)
+                      handleDeleteRoom(
+                        room.id
+                      )
                     }
                   >
                     Löschen
@@ -388,10 +566,12 @@ function PropertyDetailPage() {
         </ul>
       )}
 
+      <h3>Neuen Raum anlegen</h3>
+
       <form onSubmit={handleCreateRoom}>
         <div>
           <label htmlFor="roomName">
-            Neuer Raum
+            Raumname
           </label>
 
           <input
@@ -399,7 +579,9 @@ function PropertyDetailPage() {
             type="text"
             value={newRoomName}
             onChange={(event) =>
-              setNewRoomName(event.target.value)
+              setNewRoomName(
+                event.target.value
+              )
             }
             required
           />
@@ -410,130 +592,383 @@ function PropertyDetailPage() {
         </button>
       </form>
 
-      <h2>Objekt anlegen</h2>
+      <hr />
 
-      <form onSubmit={handleCreateHouseholdObject}>
-        <div>
-          <label htmlFor="objectRoom">
-            Raum
-          </label>
+      <h2>Objekte</h2>
 
-          <select
-            id="objectRoom"
-            value={selectedRoomId ?? ""}
-            onChange={(event) => {
-              const value = event.target.value;
+      <div>
+        <label htmlFor="objectRoom">
+          Raum auswählen
+        </label>
 
-              setSelectedRoomId(
-                value === ""
-                  ? null
-                  : Number(value)
+        <select
+          id="objectRoom"
+          value={selectedRoomId ?? ""}
+          onChange={(event) => {
+            const value =
+              event.target.value;
+
+            if (value === "") {
+              setSelectedRoomId(null);
+              setHouseholdObjects(
+                []
               );
-            }}
-          >
-            <option value="">
-              Raum auswählen
+              setEditingObjectId(
+                null
+              );
+              return;
+            }
+
+            const roomId =
+              Number(value);
+
+            setSelectedRoomId(
+              roomId
+            );
+
+            setEditingObjectId(
+              null
+            );
+
+            loadHouseholdObjects(
+              roomId
+            );
+          }}
+        >
+          <option value="">
+            Raum auswählen
+          </option>
+
+          {rooms.map((room) => (
+            <option
+              key={room.id}
+              value={room.id}
+            >
+              {room.name}
             </option>
+          ))}
+        </select>
+      </div>
 
-            {rooms.map((room) => (
-              <option
-                key={room.id}
-                value={room.id}
-              >
-                {room.name}
-              </option>
-            ))}
-          </select>
-        </div>
+      {selectedRoomId === null ? (
+        <p>
+          Bitte zuerst einen Raum
+          auswählen.
+        </p>
+      ) : (
+        <>
+          <h3>
+            Objekte im ausgewählten
+            Raum
+          </h3>
 
-        <div>
-          <label htmlFor="objectName">
-            Name
-          </label>
+          {householdObjects.length ===
+          0 ? (
+            <p>
+              Noch keine Objekte
+              vorhanden.
+            </p>
+          ) : (
+            <ul>
+              {householdObjects.map(
+                (householdObject) => (
+                  <li
+                    key={
+                      householdObject.id
+                    }
+                  >
+                    {editingObjectId ===
+                    householdObject.id ? (
+                      <>
+                        <div>
+                          <label>
+                            Name
+                          </label>
 
-          <input
-            id="objectName"
-            type="text"
-            value={objectName}
-            onChange={(event) =>
-              setObjectName(event.target.value)
+                          <input
+                            type="text"
+                            value={
+                              editingObjectName
+                            }
+                            onChange={(
+                              event
+                            ) =>
+                              setEditingObjectName(
+                                event
+                                  .target
+                                  .value
+                              )
+                            }
+                          />
+                        </div>
+
+                        <div>
+                          <label>
+                            Beschreibung
+                          </label>
+
+                          <input
+                            type="text"
+                            value={
+                              editingObjectDescription
+                            }
+                            onChange={(
+                              event
+                            ) =>
+                              setEditingObjectDescription(
+                                event
+                                  .target
+                                  .value
+                              )
+                            }
+                          />
+                        </div>
+
+                        <div>
+                          <label>
+                            Hersteller
+                          </label>
+
+                          <input
+                            type="text"
+                            value={
+                              editingObjectManufacturer
+                            }
+                            onChange={(
+                              event
+                            ) =>
+                              setEditingObjectManufacturer(
+                                event
+                                  .target
+                                  .value
+                              )
+                            }
+                          />
+                        </div>
+
+                        <div>
+                          <label>
+                            Modell
+                          </label>
+
+                          <input
+                            type="text"
+                            value={
+                              editingObjectModel
+                            }
+                            onChange={(
+                              event
+                            ) =>
+                              setEditingObjectModel(
+                                event
+                                  .target
+                                  .value
+                              )
+                            }
+                          />
+                        </div>
+
+                        <div>
+                          <label>
+                            Kaufdatum
+                          </label>
+
+                          <input
+                            type="date"
+                            value={
+                              editingObjectPurchaseDate
+                            }
+                            onChange={(
+                              event
+                            ) =>
+                              setEditingObjectPurchaseDate(
+                                event
+                                  .target
+                                  .value
+                              )
+                            }
+                          />
+                        </div>
+
+                        <button
+                          type="button"
+                          onClick={() =>
+                            handleUpdateHouseholdObject(
+                              householdObject.id
+                            )
+                          }
+                        >
+                          Speichern
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setEditingObjectId(
+                              null
+                            )
+                          }
+                        >
+                          Abbrechen
+                        </button>
+                      </>
+                    ) : (
+                      <>
+                        <p>
+                          <strong>
+                            {
+                              householdObject.name
+                            }
+                          </strong>
+                        </p>
+
+                        <p>
+                          Hersteller:{" "}
+                          {householdObject.manufacturer ||
+                            "-"}
+                        </p>
+
+                        <p>
+                          Modell:{" "}
+                          {householdObject.model ||
+                            "-"}
+                        </p>
+
+                        <p>
+                          Kaufdatum:{" "}
+                          {householdObject.purchaseDate ||
+                            "-"}
+                        </p>
+
+                        <p>
+                          Beschreibung:{" "}
+                          {householdObject.description ||
+                            "-"}
+                        </p>
+
+                        <button
+                          type="button"
+                          onClick={() =>
+                            handleEditHouseholdObject(
+                              householdObject
+                            )
+                          }
+                        >
+                          Bearbeiten
+                        </button>
+                      </>
+                    )}
+                  </li>
+                )
+              )}
+            </ul>
+          )}
+
+          <h3>Objekt anlegen</h3>
+
+          <form
+            onSubmit={
+              handleCreateHouseholdObject
             }
-            required
-          />
-        </div>
+          >
+            <div>
+              <label htmlFor="objectName">
+                Name
+              </label>
 
-        <div>
-          <label htmlFor="objectDescription">
-            Beschreibung
-          </label>
+              <input
+                id="objectName"
+                type="text"
+                value={objectName}
+                onChange={(event) =>
+                  setObjectName(
+                    event.target.value
+                  )
+                }
+                required
+              />
+            </div>
 
-          <input
-            id="objectDescription"
-            type="text"
-            value={objectDescription}
-            onChange={(event) =>
-              setObjectDescription(
-                event.target.value
-              )
-            }
-          />
-        </div>
+            <div>
+              <label htmlFor="objectDescription">
+                Beschreibung
+              </label>
 
-        <div>
-          <label htmlFor="objectManufacturer">
-            Hersteller
-          </label>
+              <input
+                id="objectDescription"
+                type="text"
+                value={
+                  objectDescription
+                }
+                onChange={(event) =>
+                  setObjectDescription(
+                    event.target.value
+                  )
+                }
+              />
+            </div>
 
-          <input
-            id="objectManufacturer"
-            type="text"
-            value={objectManufacturer}
-            onChange={(event) =>
-              setObjectManufacturer(
-                event.target.value
-              )
-            }
-          />
-        </div>
+            <div>
+              <label htmlFor="objectManufacturer">
+                Hersteller
+              </label>
 
-        <div>
-          <label htmlFor="objectModel">
-            Modell
-          </label>
+              <input
+                id="objectManufacturer"
+                type="text"
+                value={
+                  objectManufacturer
+                }
+                onChange={(event) =>
+                  setObjectManufacturer(
+                    event.target.value
+                  )
+                }
+              />
+            </div>
 
-          <input
-            id="objectModel"
-            type="text"
-            value={objectModel}
-            onChange={(event) =>
-              setObjectModel(event.target.value)
-            }
-          />
-        </div>
+            <div>
+              <label htmlFor="objectModel">
+                Modell
+              </label>
 
-        <div>
-          <label htmlFor="objectPurchaseDate">
-            Kaufdatum
-          </label>
+              <input
+                id="objectModel"
+                type="text"
+                value={objectModel}
+                onChange={(event) =>
+                  setObjectModel(
+                    event.target.value
+                  )
+                }
+              />
+            </div>
 
-          <input
-            id="objectPurchaseDate"
-            type="date"
-            value={objectPurchaseDate}
-            onChange={(event) =>
-              setObjectPurchaseDate(
-                event.target.value
-              )
-            }
-          />
-        </div>
+            <div>
+              <label htmlFor="objectPurchaseDate">
+                Kaufdatum
+              </label>
 
-        <button type="submit">
-          Objekt anlegen
-        </button>
-      </form>
+              <input
+                id="objectPurchaseDate"
+                type="date"
+                value={
+                  objectPurchaseDate
+                }
+                onChange={(event) =>
+                  setObjectPurchaseDate(
+                    event.target.value
+                  )
+                }
+              />
+            </div>
 
-      {message && <p>{message}</p>}
+            <button type="submit">
+              Objekt anlegen
+            </button>
+          </form>
+        </>
+      )}
     </div>
   );
 }

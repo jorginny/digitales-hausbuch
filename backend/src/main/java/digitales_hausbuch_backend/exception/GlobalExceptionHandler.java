@@ -1,5 +1,6 @@
 package digitales_hausbuch_backend.exception;
 
+import digitales_hausbuch_backend.householdobject.HouseholdObjectNotFoundException;
 import digitales_hausbuch_backend.property.PropertyNotFoundException;
 import digitales_hausbuch_backend.room.RoomNotFoundException;
 import digitales_hausbuch_backend.user.EmailAlreadyExistsException;
@@ -80,6 +81,21 @@ public class GlobalExceptionHandler {
             RoomNotFoundException ex) {
 
         Map<String, String> response = new HashMap<>();
+        response.put("message", ex.getMessage());
+
+        return ResponseEntity
+                .status(HttpStatus.NOT_FOUND)
+                .body(response);
+    }
+
+    @ExceptionHandler(HouseholdObjectNotFoundException.class)
+    public ResponseEntity<Map<String, String>>
+    handleHouseholdObjectNotFound(
+            HouseholdObjectNotFoundException ex) {
+
+        Map<String, String> response =
+                new HashMap<>();
+
         response.put("message", ex.getMessage());
 
         return ResponseEntity

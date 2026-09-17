@@ -42,3 +42,51 @@ export async function createHouseholdObject(
 
   return response.json();
 }
+
+export async function getHouseholdObjects(
+  propertyId: number,
+  roomId: number
+): Promise<HouseholdObjectResponse[]> {
+  const response = await fetch(
+    `http://localhost:8080/api/properties/${propertyId}/rooms/${roomId}/objects`,
+    {
+      method: "GET",
+      credentials: "include",
+    }
+  );
+
+  if (!response.ok) {
+    throw new Error(
+      "Objekte konnten nicht geladen werden."
+    );
+  }
+
+  return response.json();
+}
+
+export async function updateHouseholdObject(
+  propertyId: number,
+  roomId: number,
+  objectId: number,
+  householdObject: HouseholdObjectRequest
+): Promise<HouseholdObjectResponse> {
+  const response = await fetch(
+    `http://localhost:8080/api/properties/${propertyId}/rooms/${roomId}/objects/${objectId}`,
+    {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      credentials: "include",
+      body: JSON.stringify(householdObject),
+    }
+  );
+
+  if (!response.ok) {
+    throw new Error(
+      "Objekt konnte nicht aktualisiert werden."
+    );
+  }
+
+  return response.json();
+}
