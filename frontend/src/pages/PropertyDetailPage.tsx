@@ -19,6 +19,7 @@ import {
   createHouseholdObject,
   getHouseholdObjects,
   updateHouseholdObject,
+  deleteHouseholdObject,
   type HouseholdObjectResponse,
 } from "../services/householdObjectService";
 
@@ -254,7 +255,6 @@ function PropertyDetailPage() {
         )
       );
 
-      // Falls genau dieser Raum ausgewählt war:
       if (selectedRoomId === roomId) {
         setSelectedRoomId(null);
         setHouseholdObjects([]);
@@ -419,6 +419,52 @@ function PropertyDetailPage() {
 
       setMessage(
         "Objekt wurde erfolgreich aktualisiert."
+      );
+    } catch (error) {
+      if (error instanceof Error) {
+        setError(error.message);
+      }
+    }
+  };
+
+  const handleDeleteHouseholdObject = async (
+    objectId: number
+  ) => {
+    if (!id || selectedRoomId === null) {
+      return;
+    }
+
+    const confirmed = window.confirm(
+      "Möchtest du dieses Objekt wirklich löschen?"
+    );
+
+    if (!confirmed) {
+      return;
+    }
+
+    setMessage("");
+    setError("");
+
+    try {
+      await deleteHouseholdObject(
+        Number(id),
+        selectedRoomId,
+        objectId
+      );
+
+      setHouseholdObjects((currentObjects) =>
+        currentObjects.filter(
+          (householdObject) =>
+            householdObject.id !== objectId
+        )
+      );
+
+      if (editingObjectId === objectId) {
+        setEditingObjectId(null);
+      }
+
+      setMessage(
+        "Objekt wurde erfolgreich gelöscht."
       );
     } catch (error) {
       if (error instanceof Error) {
@@ -610,29 +656,17 @@ function PropertyDetailPage() {
 
             if (value === "") {
               setSelectedRoomId(null);
-              setHouseholdObjects(
-                []
-              );
-              setEditingObjectId(
-                null
-              );
+              setHouseholdObjects([]);
+              setEditingObjectId(null);
               return;
             }
 
-            const roomId =
-              Number(value);
+            const roomId = Number(value);
 
-            setSelectedRoomId(
-              roomId
-            );
+            setSelectedRoomId(roomId);
+            setEditingObjectId(null);
 
-            setEditingObjectId(
-              null
-            );
-
-            loadHouseholdObjects(
-              roomId
-            );
+            loadHouseholdObjects(roomId);
           }}
         >
           <option value="">
@@ -652,21 +686,17 @@ function PropertyDetailPage() {
 
       {selectedRoomId === null ? (
         <p>
-          Bitte zuerst einen Raum
-          auswählen.
+          Bitte zuerst einen Raum auswählen.
         </p>
       ) : (
         <>
           <h3>
-            Objekte im ausgewählten
-            Raum
+            Objekte im ausgewählten Raum
           </h3>
 
-          {householdObjects.length ===
-          0 ? (
+          {householdObjects.length === 0 ? (
             <p>
-              Noch keine Objekte
-              vorhanden.
+              Noch keine Objekte vorhanden.
             </p>
           ) : (
             <ul>
@@ -694,9 +724,7 @@ function PropertyDetailPage() {
                               event
                             ) =>
                               setEditingObjectName(
-                                event
-                                  .target
-                                  .value
+                                event.target.value
                               )
                             }
                           />
@@ -716,9 +744,7 @@ function PropertyDetailPage() {
                               event
                             ) =>
                               setEditingObjectDescription(
-                                event
-                                  .target
-                                  .value
+                                event.target.value
                               )
                             }
                           />
@@ -738,9 +764,7 @@ function PropertyDetailPage() {
                               event
                             ) =>
                               setEditingObjectManufacturer(
-                                event
-                                  .target
-                                  .value
+                                event.target.value
                               )
                             }
                           />
@@ -760,9 +784,7 @@ function PropertyDetailPage() {
                               event
                             ) =>
                               setEditingObjectModel(
-                                event
-                                  .target
-                                  .value
+                                event.target.value
                               )
                             }
                           />
@@ -782,9 +804,7 @@ function PropertyDetailPage() {
                               event
                             ) =>
                               setEditingObjectPurchaseDate(
-                                event
-                                  .target
-                                  .value
+                                event.target.value
                               )
                             }
                           />
@@ -803,11 +823,26 @@ function PropertyDetailPage() {
 
                         <button
                           type="button"
-                          onClick={() =>
+                          onClick={() => {
                             setEditingObjectId(
                               null
-                            )
-                          }
+                            );
+                            setEditingObjectName(
+                              ""
+                            );
+                            setEditingObjectDescription(
+                              ""
+                            );
+                            setEditingObjectManufacturer(
+                              ""
+                            );
+                            setEditingObjectModel(
+                              ""
+                            );
+                            setEditingObjectPurchaseDate(
+                              ""
+                            );
+                          }}
                         >
                           Abbrechen
                         </button>
@@ -855,6 +890,17 @@ function PropertyDetailPage() {
                           }
                         >
                           Bearbeiten
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() =>
+                            handleDeleteHouseholdObject(
+                              householdObject.id
+                            )
+                          }
+                        >
+                          Löschen
                         </button>
                       </>
                     )}

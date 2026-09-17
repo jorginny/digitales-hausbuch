@@ -18,6 +18,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 
 @SpringBootTest
 @AutoConfigureMockMvc
@@ -696,4 +697,187 @@ class HouseholdObjectControllerIntegrationTest {
                 unchangedObject.getName()
         );
     }
+
+    @Test
+    void shouldDeleteOwnHouseholdObject() throws Exception {
+
+        String userRequest = """
+        {
+          "email": "test@example.de",
+          "password": "MeinPasswort123"
+        }
+        """;
+
+        mockMvc.perform(post("/api/auth/register")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(userRequest))
+                .andExpect(status().isCreated());
+
+        MvcResult loginResult = mockMvc.perform(post("/api/auth/login")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(userRequest))
+                .andExpect(status().isOk())
+                .andReturn();
+
+        MockHttpSession session =
+                (MockHttpSession) loginResult.getRequest().getSession(false);
+
+        mockMvc.perform(post("/api/properties")
+                        .session(session)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                        {
+                          "name": "Mein Haus"
+                        }
+                        """))
+                .andExpect(status().isCreated());
+
+        Long propertyId =
+                propertyRepository.findAll().get(0).getId();
+
+        mockMvc.perform(post("/api/properties/{propertyId}/rooms", propertyId)
+                        .session(session)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                        {
+                          "name": "Keller"
+                        }
+                        """))
+                .andExpect(status().isCreated());
+
+        Long roomId =
+                roomRepository.findAll().get(0).getId();
+
+        mockMvc.perform(post(
+                        "/api/properties/{propertyId}/rooms/{roomId}/objects",
+                        propertyId,
+                        roomId)
+                        .session(session)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                        {
+                          "name": "Waschmaschine"
+                        }
+                        """))
+                .andExpect(status().isCreated());
+
+        Long objectId =
+                householdObjectRepository.findAll().get(0).getId();
+
+        mockMvc.perform(delete(
+                        "/api/properties/{propertyId}/rooms/{roomId}/objects/{objectId}",
+                        propertyId,
+                        roomId,
+                        objectId)
+                        .session(session))
+                .andExpect(status().isNoContent());
+
+        assertEquals(0, householdObjectRepository.count());
+    }
+
+    @Test
+    void shouldNotAllowDeletingForeignHouseholdObject() throws Exception {
+
+        String userOneRequest = """
+        {
+          "email": "user1@example.de",
+          "password": "MeinPasswort123"
+        }
+        """;
+
+        String userTwoRequest = """
+        {
+          "email": "user2@example.de",
+          "password": "MeinPasswort123"
+        }
+        """;
+
+        // User 1 registrieren und einloggen
+        mockMvc.perform(post("/api/auth/register")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(userOneRequest))
+                .andExpect(status().isCreated());
+
+        MvcResult userOneLogin = mockMvc.perform(post("/api/auth/login")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(userOneRequest))
+                .andExpect(status().isOk())
+                .andReturn();
+
+        MockHttpSession userOneSession =
+                (MockHttpSession) userOneLogin.getRequest().getSession(false);
+
+        // Property von User 1
+        mockMvc.perform(post("/api/properties")
+                        .session(userOneSession)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                        {
+                          "name": "Haus von User 1"
+                        }
+                        """))
+                .andExpect(status().isCreated());
+
+        Long propertyId =
+                propertyRepository.findAll().get(0).getId();
+
+        // Raum von User 1
+        mockMvc.perform(post("/api/properties/{propertyId}/rooms", propertyId)
+                        .session(userOneSession)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                        {
+                          "name": "Keller"
+                        }
+                        """))
+                .andExpect(status().isCreated());
+
+        Long roomId =
+                roomRepository.findAll().get(0).getId();
+
+        // Objekt von User 1
+        mockMvc.perform(post(
+                        "/api/properties/{propertyId}/rooms/{roomId}/objects",
+                        propertyId,
+                        roomId)
+                        .session(userOneSession)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                        {
+                          "name": "Waschmaschine"
+                        }
+                        """))
+                .andExpect(status().isCreated());
+
+        Long objectId =
+                householdObjectRepository.findAll().get(0).getId();
+
+        // User 2 registrieren und einloggen
+        mockMvc.perform(post("/api/auth/register")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(userTwoRequest))
+                .andExpect(status().isCreated());
+
+        MvcResult userTwoLogin = mockMvc.perform(post("/api/auth/login")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(userTwoRequest))
+                .andExpect(status().isOk())
+                .andReturn();
+
+        MockHttpSession userTwoSession =
+                (MockHttpSession) userTwoLogin.getRequest().getSession(false);
+
+        // User 2 versucht das Objekt von User 1 zu löschen
+        mockMvc.perform(delete(
+                        "/api/properties/{propertyId}/rooms/{roomId}/objects/{objectId}",
+                        propertyId,
+                        roomId,
+                        objectId)
+                        .session(userTwoSession))
+                .andExpect(status().isNotFound());
+
+        assertEquals(1, householdObjectRepository.count());
+    }
+
+
 }

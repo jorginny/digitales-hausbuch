@@ -176,4 +176,45 @@ public class HouseholdObjectService {
 
         return toResponse(savedObject);
     }
+
+    public void deleteHouseholdObject(
+            Long propertyId,
+            Long roomId,
+            Long objectId,
+            String userEmail) {
+
+        User owner = userRepository.findByEmail(userEmail)
+                .orElseThrow(() ->
+                        new IllegalArgumentException(
+                                "Benutzer wurde nicht gefunden."
+                        )
+                );
+
+        Property property = propertyRepository
+                .findByIdAndOwner(propertyId, owner)
+                .orElseThrow(() ->
+                        new PropertyNotFoundException(
+                                "Immobilie wurde nicht gefunden."
+                        )
+                );
+
+        Room room = roomRepository
+                .findByIdAndProperty(roomId, property)
+                .orElseThrow(() ->
+                        new RoomNotFoundException(
+                                "Raum wurde nicht gefunden."
+                        )
+                );
+
+        HouseholdObject householdObject =
+                householdObjectRepository
+                        .findByIdAndRoom(objectId, room)
+                        .orElseThrow(() ->
+                                new HouseholdObjectNotFoundException(
+                                        "Objekt wurde nicht gefunden."
+                                )
+                        );
+
+        householdObjectRepository.delete(householdObject);
+    }
 }

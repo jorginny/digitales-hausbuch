@@ -77,4 +77,21 @@ public class HouseholdObjectController {
 
         return ResponseEntity.ok(response);
     }
+
+    @DeleteMapping("/{objectId}")
+    public ResponseEntity<Void> deleteHouseholdObject(
+            @PathVariable Long propertyId,
+            @PathVariable Long roomId,
+            @PathVariable Long objectId,
+            Authentication authentication) {
+
+        householdObjectService.deleteHouseholdObject(
+                propertyId,
+                roomId,
+                objectId,
+                authentication.getName()
+        );
+
+        return ResponseEntity.noContent().build();
+    }
 }

@@ -90,3 +90,23 @@ export async function updateHouseholdObject(
 
   return response.json();
 }
+
+export async function deleteHouseholdObject(
+  propertyId: number,
+  roomId: number,
+  objectId: number
+): Promise<void> {
+  const response = await fetch(
+    `http://localhost:8080/api/properties/${propertyId}/rooms/${roomId}/objects/${objectId}`,
+    {
+      method: "DELETE",
+      credentials: "include",
+    }
+  );
+
+  if (!response.ok) {
+    throw new Error(
+      "Objekt konnte nicht gelöscht werden."
+    );
+  }
+}
