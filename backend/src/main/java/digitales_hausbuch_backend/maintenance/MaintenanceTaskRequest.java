@@ -1,6 +1,7 @@
 package digitales_hausbuch_backend.maintenance;
 
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Positive;
 
 import java.time.LocalDate;
 
@@ -11,7 +12,12 @@ public record MaintenanceTaskRequest(
 
         String description,
 
-        LocalDate dueDate
+        LocalDate dueDate,
+
+        @Positive
+        Integer recurrenceInterval,
+
+        RecurrenceUnit recurrenceUnit
 
 ) {
 }

@@ -14,6 +14,10 @@ public record MaintenanceTaskResponse(
 
         boolean completed,
 
+        Integer recurrenceInterval,
+
+        RecurrenceUnit recurrenceUnit,
+
         Long householdObjectId
 
 ) {

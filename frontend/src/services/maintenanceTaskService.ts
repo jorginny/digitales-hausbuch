@@ -2,6 +2,8 @@ export type MaintenanceTaskRequest = {
   title: string;
   description?: string;
   dueDate?: string;
+  recurrenceInterval?: number;
+  recurrenceUnit?: RecurrenceUnit;
 };
 
 export type MaintenanceTaskResponse = {
@@ -10,6 +12,8 @@ export type MaintenanceTaskResponse = {
   description?: string;
   dueDate?: string;
   completed: boolean;
+  recurrenceInterval?: number;
+  recurrenceUnit?: RecurrenceUnit;
   householdObjectId: number;
 };
 
@@ -56,6 +60,39 @@ export async function getMaintenanceTasks(
   if (!response.ok) {
     throw new Error(
       "Wartungsaufgaben konnten nicht geladen werden."
+    );
+  }
+
+  return response.json();
+}
+
+export type RecurrenceUnit =
+  | "MONTHS"
+  | "YEARS";
+
+
+export async function updateMaintenanceTask(
+  propertyId: number,
+  roomId: number,
+  objectId: number,
+  taskId: number,
+  task: MaintenanceTaskRequest
+): Promise<MaintenanceTaskResponse> {
+  const response = await fetch(
+    `http://localhost:8080/api/properties/${propertyId}/rooms/${roomId}/objects/${objectId}/maintenance-tasks/${taskId}`,
+    {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      credentials: "include",
+      body: JSON.stringify(task),
+    }
+  );
+
+  if (!response.ok) {
+    throw new Error(
+      "Wartungsaufgabe konnte nicht aktualisiert werden."
     );
   }
 

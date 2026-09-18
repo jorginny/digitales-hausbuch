@@ -2,6 +2,7 @@ package digitales_hausbuch_backend.maintenance;
 
 import digitales_hausbuch_backend.householdobject.HouseholdObject;
 import jakarta.persistence.*;
+import jakarta.validation.constraints.NotBlank;
 
 import java.time.LocalDate;
 
@@ -23,22 +24,33 @@ public class MaintenanceTask {
     @Column(nullable = false)
     private boolean completed = false;
 
+    private Integer recurrenceInterval;
+
+    @Enumerated(EnumType.STRING)
+    private RecurrenceUnit recurrenceUnit;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "household_object_id", nullable = false)
     private HouseholdObject householdObject;
 
-    public MaintenanceTask() {
+    public MaintenanceTask(){
+
     }
+
 
     public MaintenanceTask(
             String title,
             String description,
             LocalDate dueDate,
+            Integer recurrenceInterval,
+            RecurrenceUnit recurrenceUnit,
             HouseholdObject householdObject) {
 
         this.title = title;
         this.description = description;
         this.dueDate = dueDate;
+        this.recurrenceInterval = recurrenceInterval;
+        this.recurrenceUnit = recurrenceUnit;
         this.householdObject = householdObject;
         this.completed = false;
     }
@@ -81,5 +93,21 @@ public class MaintenanceTask {
 
     public void setCompleted(boolean completed) {
         this.completed = completed;
+    }
+
+    public Integer getRecurrenceInterval() {
+        return recurrenceInterval;
+    }
+
+    public RecurrenceUnit getRecurrenceUnit() {
+        return recurrenceUnit;
+    }
+
+    public void setRecurrenceInterval(Integer recurrenceInterval) {
+        this.recurrenceInterval = recurrenceInterval;
+    }
+
+    public void setRecurrenceUnit(RecurrenceUnit recurrenceUnit) {
+        this.recurrenceUnit = recurrenceUnit;
     }
 }

@@ -26,7 +26,9 @@ import {
 import {
   createMaintenanceTask,
   getMaintenanceTasks,
+  updateMaintenanceTask,
   type MaintenanceTaskResponse,
+  type RecurrenceUnit,
 } from "../services/maintenanceTaskService";
 
 function PropertyDetailPage() {
@@ -42,8 +44,11 @@ function PropertyDetailPage() {
   const [error, setError] = useState("");
 
   // Räume
-  const [rooms, setRooms] = useState<RoomResponse[]>([]);
-  const [newRoomName, setNewRoomName] = useState("");
+  const [rooms, setRooms] =
+    useState<RoomResponse[]>([]);
+
+  const [newRoomName, setNewRoomName] =
+    useState("");
 
   const [editingRoomId, setEditingRoomId] =
     useState<number | null>(null);
@@ -58,12 +63,18 @@ function PropertyDetailPage() {
   const [householdObjects, setHouseholdObjects] =
     useState<HouseholdObjectResponse[]>([]);
 
-  const [objectName, setObjectName] = useState("");
+  const [objectName, setObjectName] =
+    useState("");
+
   const [objectDescription, setObjectDescription] =
     useState("");
+
   const [objectManufacturer, setObjectManufacturer] =
     useState("");
-  const [objectModel, setObjectModel] = useState("");
+
+  const [objectModel, setObjectModel] =
+    useState("");
+
   const [objectPurchaseDate, setObjectPurchaseDate] =
     useState("");
 
@@ -101,11 +112,51 @@ function PropertyDetailPage() {
   const [maintenanceTasks, setMaintenanceTasks] =
     useState<MaintenanceTaskResponse[]>([]);
 
-  const [taskTitle, setTaskTitle] = useState("");
+  const [taskTitle, setTaskTitle] =
+    useState("");
+
   const [taskDescription, setTaskDescription] =
     useState("");
+
   const [taskDueDate, setTaskDueDate] =
     useState("");
+
+  const [
+    taskRecurrenceInterval,
+    setTaskRecurrenceInterval,
+  ] = useState("");
+
+  const [
+    taskRecurrenceUnit,
+    setTaskRecurrenceUnit,
+  ] = useState<"" | RecurrenceUnit>("");
+
+  // Wartungsaufgabe bearbeiten
+  const [editingTaskId, setEditingTaskId] =
+    useState<number | null>(null);
+
+  const [editingTaskTitle, setEditingTaskTitle] =
+    useState("");
+
+  const [
+    editingTaskDescription,
+    setEditingTaskDescription,
+  ] = useState("");
+
+  const [
+    editingTaskDueDate,
+    setEditingTaskDueDate,
+  ] = useState("");
+
+  const [
+    editingTaskRecurrenceInterval,
+    setEditingTaskRecurrenceInterval,
+  ] = useState("");
+
+  const [
+    editingTaskRecurrenceUnit,
+    setEditingTaskRecurrenceUnit,
+  ] = useState<"" | RecurrenceUnit>("");
 
   useEffect(() => {
     const loadProperty = async () => {
@@ -202,7 +253,9 @@ function PropertyDetailPage() {
     }
   };
 
-  const handleEditRoom = (room: RoomResponse) => {
+  const handleEditRoom = (
+    room: RoomResponse
+  ) => {
     setEditingRoomId(room.id);
     setEditingRoomName(room.name);
   };
@@ -218,13 +271,14 @@ function PropertyDetailPage() {
     setError("");
 
     try {
-      const updatedRoom = await updateRoom(
-        Number(id),
-        roomId,
-        {
-          name: editingRoomName,
-        }
-      );
+      const updatedRoom =
+        await updateRoom(
+          Number(id),
+          roomId,
+          {
+            name: editingRoomName,
+          }
+        );
 
       setRooms((currentRooms) =>
         currentRooms.map((room) =>
@@ -407,7 +461,8 @@ function PropertyDetailPage() {
               editingObjectDescription,
             manufacturer:
               editingObjectManufacturer,
-            model: editingObjectModel,
+            model:
+              editingObjectModel,
             purchaseDate:
               editingObjectPurchaseDate ||
               undefined,
@@ -424,11 +479,6 @@ function PropertyDetailPage() {
       );
 
       setEditingObjectId(null);
-      setEditingObjectName("");
-      setEditingObjectDescription("");
-      setEditingObjectManufacturer("");
-      setEditingObjectModel("");
-      setEditingObjectPurchaseDate("");
 
       setMessage(
         "Objekt wurde erfolgreich aktualisiert."
@@ -531,6 +581,16 @@ function PropertyDetailPage() {
     setError("");
     setMessage("");
 
+    const recurrenceInterval =
+      taskRecurrenceInterval === ""
+        ? undefined
+        : Number(taskRecurrenceInterval);
+
+    const recurrenceUnit =
+      taskRecurrenceUnit === ""
+        ? undefined
+        : taskRecurrenceUnit;
+
     try {
       const createdTask =
         await createMaintenanceTask(
@@ -542,6 +602,8 @@ function PropertyDetailPage() {
             description: taskDescription,
             dueDate:
               taskDueDate || undefined,
+            recurrenceInterval,
+            recurrenceUnit,
           }
         );
 
@@ -553,9 +615,101 @@ function PropertyDetailPage() {
       setTaskTitle("");
       setTaskDescription("");
       setTaskDueDate("");
+      setTaskRecurrenceInterval("");
+      setTaskRecurrenceUnit("");
 
       setMessage(
         "Wartungsaufgabe wurde erfolgreich angelegt."
+      );
+    } catch (error) {
+      if (error instanceof Error) {
+        setError(error.message);
+      }
+    }
+  };
+
+  const handleEditMaintenanceTask = (
+    task: MaintenanceTaskResponse
+  ) => {
+    setEditingTaskId(task.id);
+    setEditingTaskTitle(task.title);
+    setEditingTaskDescription(
+      task.description ?? ""
+    );
+    setEditingTaskDueDate(
+      task.dueDate ?? ""
+    );
+
+    setEditingTaskRecurrenceInterval(
+      task.recurrenceInterval?.toString() ?? ""
+    );
+
+    setEditingTaskRecurrenceUnit(
+      task.recurrenceUnit ?? ""
+    );
+  };
+
+  const handleUpdateMaintenanceTask = async (
+    taskId: number
+  ) => {
+    if (
+      !id ||
+      selectedRoomId === null ||
+      selectedObjectId === null
+    ) {
+      return;
+    }
+
+    setError("");
+    setMessage("");
+
+    const recurrenceInterval =
+      editingTaskRecurrenceInterval === ""
+        ? undefined
+        : Number(
+            editingTaskRecurrenceInterval
+          );
+
+    const recurrenceUnit =
+      editingTaskRecurrenceUnit === ""
+        ? undefined
+        : editingTaskRecurrenceUnit;
+
+    try {
+      const updatedTask =
+        await updateMaintenanceTask(
+          Number(id),
+          selectedRoomId,
+          selectedObjectId,
+          taskId,
+          {
+            title: editingTaskTitle,
+            description:
+              editingTaskDescription,
+            dueDate:
+              editingTaskDueDate || undefined,
+            recurrenceInterval,
+            recurrenceUnit,
+          }
+        );
+
+      setMaintenanceTasks((currentTasks) =>
+        currentTasks.map((task) =>
+          task.id === taskId
+            ? updatedTask
+            : task
+        )
+      );
+
+      setEditingTaskId(null);
+      setEditingTaskTitle("");
+      setEditingTaskDescription("");
+      setEditingTaskDueDate("");
+      setEditingTaskRecurrenceInterval("");
+      setEditingTaskRecurrenceUnit("");
+
+      setMessage(
+        "Wartungsaufgabe wurde erfolgreich aktualisiert."
       );
     } catch (error) {
       if (error instanceof Error) {
@@ -602,9 +756,7 @@ function PropertyDetailPage() {
               type="text"
               value={address}
               onChange={(event) =>
-                setAddress(
-                  event.target.value
-                )
+                setAddress(event.target.value)
               }
             />
           </div>
@@ -648,10 +800,9 @@ function PropertyDetailPage() {
 
                   <button
                     type="button"
-                    onClick={() => {
-                      setEditingRoomId(null);
-                      setEditingRoomName("");
-                    }}
+                    onClick={() =>
+                      setEditingRoomId(null)
+                    }
                   >
                     Abbrechen
                   </button>
@@ -687,23 +838,14 @@ function PropertyDetailPage() {
       <h3>Neuen Raum anlegen</h3>
 
       <form onSubmit={handleCreateRoom}>
-        <div>
-          <label htmlFor="roomName">
-            Raumname
-          </label>
-
-          <input
-            id="roomName"
-            type="text"
-            value={newRoomName}
-            onChange={(event) =>
-              setNewRoomName(
-                event.target.value
-              )
-            }
-            required
-          />
-        </div>
+        <input
+          type="text"
+          value={newRoomName}
+          onChange={(event) =>
+            setNewRoomName(event.target.value)
+          }
+          required
+        />
 
         <button type="submit">
           Raum anlegen
@@ -714,86 +856,321 @@ function PropertyDetailPage() {
 
       <h2>Objekte</h2>
 
-      <div>
-        <label htmlFor="objectRoom">
-          Raum auswählen
-        </label>
+      <select
+        value={selectedRoomId ?? ""}
+        onChange={(event) => {
+          const value = event.target.value;
 
+          if (value === "") {
+            setSelectedRoomId(null);
+            setHouseholdObjects([]);
+            setSelectedObjectId(null);
+            setMaintenanceTasks([]);
+            return;
+          }
+
+          const roomId = Number(value);
+
+          setSelectedRoomId(roomId);
+          setHouseholdObjects([]);
+          setSelectedObjectId(null);
+          setMaintenanceTasks([]);
+
+          loadHouseholdObjects(roomId);
+        }}
+      >
+        <option value="">
+          Raum auswählen
+        </option>
+
+        {rooms.map((room) => (
+          <option
+            key={room.id}
+            value={room.id}
+          >
+            {room.name}
+          </option>
+        ))}
+      </select>
+
+      {selectedRoomId !== null && (
+        <>
+          <h3>Objekte im Raum</h3>
+
+          {householdObjects.map(
+            (householdObject) => (
+              <div key={householdObject.id}>
+                {editingObjectId ===
+                householdObject.id ? (
+                  <>
+                    <input
+                      value={editingObjectName}
+                      onChange={(event) =>
+                        setEditingObjectName(
+                          event.target.value
+                        )
+                      }
+                    />
+
+                    <input
+                      value={
+                        editingObjectDescription
+                      }
+                      onChange={(event) =>
+                        setEditingObjectDescription(
+                          event.target.value
+                        )
+                      }
+                    />
+
+                    <input
+                      value={
+                        editingObjectManufacturer
+                      }
+                      onChange={(event) =>
+                        setEditingObjectManufacturer(
+                          event.target.value
+                        )
+                      }
+                    />
+
+                    <input
+                      value={editingObjectModel}
+                      onChange={(event) =>
+                        setEditingObjectModel(
+                          event.target.value
+                        )
+                      }
+                    />
+
+                    <input
+                      type="date"
+                      value={
+                        editingObjectPurchaseDate
+                      }
+                      onChange={(event) =>
+                        setEditingObjectPurchaseDate(
+                          event.target.value
+                        )
+                      }
+                    />
+
+                    <button
+                      type="button"
+                      onClick={() =>
+                        handleUpdateHouseholdObject(
+                          householdObject.id
+                        )
+                      }
+                    >
+                      Speichern
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setEditingObjectId(null)
+                      }
+                    >
+                      Abbrechen
+                    </button>
+                  </>
+                ) : (
+                  <>
+                    <p>
+                      <strong>
+                        {householdObject.name}
+                      </strong>
+                    </p>
+
+                    <p>
+                      Hersteller:{" "}
+                      {householdObject.manufacturer ||
+                        "-"}
+                    </p>
+
+                    <p>
+                      Modell:{" "}
+                      {householdObject.model ||
+                        "-"}
+                    </p>
+
+                    <p>
+                      Kaufdatum:{" "}
+                      {householdObject.purchaseDate ||
+                        "-"}
+                    </p>
+
+                    <p>
+                      Beschreibung:{" "}
+                      {householdObject.description ||
+                        "-"}
+                    </p>
+
+                    <button
+                      type="button"
+                      onClick={() =>
+                        handleEditHouseholdObject(
+                          householdObject
+                        )
+                      }
+                    >
+                      Bearbeiten
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() =>
+                        handleDeleteHouseholdObject(
+                          householdObject.id
+                        )
+                      }
+                    >
+                      Löschen
+                    </button>
+                  </>
+                )}
+              </div>
+            )
+          )}
+
+          <h3>Objekt anlegen</h3>
+
+          <form
+            onSubmit={
+              handleCreateHouseholdObject
+            }
+          >
+            <input
+              placeholder="Name"
+              value={objectName}
+              onChange={(event) =>
+                setObjectName(
+                  event.target.value
+                )
+              }
+              required
+            />
+
+            <input
+              placeholder="Beschreibung"
+              value={objectDescription}
+              onChange={(event) =>
+                setObjectDescription(
+                  event.target.value
+                )
+              }
+            />
+
+            <input
+              placeholder="Hersteller"
+              value={objectManufacturer}
+              onChange={(event) =>
+                setObjectManufacturer(
+                  event.target.value
+                )
+              }
+            />
+
+            <input
+              placeholder="Modell"
+              value={objectModel}
+              onChange={(event) =>
+                setObjectModel(
+                  event.target.value
+                )
+              }
+            />
+
+            <input
+              type="date"
+              value={objectPurchaseDate}
+              onChange={(event) =>
+                setObjectPurchaseDate(
+                  event.target.value
+                )
+              }
+            />
+
+            <button type="submit">
+              Objekt anlegen
+            </button>
+          </form>
+        </>
+      )}
+
+      <hr />
+
+      <h2>Wartungsaufgaben</h2>
+
+      {selectedRoomId !== null && (
         <select
-          id="objectRoom"
-          value={selectedRoomId ?? ""}
+          value={selectedObjectId ?? ""}
           onChange={(event) => {
-            const value =
-              event.target.value;
+            const value = event.target.value;
 
             if (value === "") {
-              setSelectedRoomId(null);
-              setHouseholdObjects([]);
               setSelectedObjectId(null);
               setMaintenanceTasks([]);
               return;
             }
 
-            const roomId = Number(value);
+            const objectId =
+              Number(value);
 
-            setSelectedRoomId(roomId);
-            setHouseholdObjects([]);
-            setSelectedObjectId(null);
+            setSelectedObjectId(objectId);
             setMaintenanceTasks([]);
-            setEditingObjectId(null);
+            setEditingTaskId(null);
 
-            loadHouseholdObjects(roomId);
+            loadMaintenanceTasks(objectId);
           }}
         >
           <option value="">
-            Raum auswählen
+            Objekt auswählen
           </option>
 
-          {rooms.map((room) => (
-            <option
-              key={room.id}
-              value={room.id}
-            >
-              {room.name}
-            </option>
-          ))}
+          {householdObjects.map(
+            (householdObject) => (
+              <option
+                key={householdObject.id}
+                value={householdObject.id}
+              >
+                {householdObject.name}
+              </option>
+            )
+          )}
         </select>
-      </div>
+      )}
 
-      {selectedRoomId === null ? (
-        <p>
-          Bitte zuerst einen Raum auswählen.
-        </p>
-      ) : (
+      {selectedObjectId !== null && (
         <>
-          <h3>
-            Objekte im ausgewählten Raum
-          </h3>
+          <h3>Wartungsaufgaben</h3>
 
-          {householdObjects.length === 0 ? (
+          {maintenanceTasks.length === 0 ? (
             <p>
-              Noch keine Objekte vorhanden.
+              Noch keine Wartungsaufgaben
+              vorhanden.
             </p>
           ) : (
             <ul>
-              {householdObjects.map(
-                (householdObject) => (
-                  <li key={householdObject.id}>
-                    {editingObjectId ===
-                    householdObject.id ? (
+              {maintenanceTasks.map(
+                (task) => (
+                  <li key={task.id}>
+                    {editingTaskId ===
+                    task.id ? (
                       <>
                         <div>
                           <label>
-                            Name
+                            Titel
                           </label>
 
                           <input
                             type="text"
                             value={
-                              editingObjectName
+                              editingTaskTitle
                             }
                             onChange={(event) =>
-                              setEditingObjectName(
+                              setEditingTaskTitle(
                                 event.target.value
                               )
                             }
@@ -808,10 +1185,10 @@ function PropertyDetailPage() {
                           <input
                             type="text"
                             value={
-                              editingObjectDescription
+                              editingTaskDescription
                             }
                             onChange={(event) =>
-                              setEditingObjectDescription(
+                              setEditingTaskDescription(
                                 event.target.value
                               )
                             }
@@ -820,63 +1197,78 @@ function PropertyDetailPage() {
 
                         <div>
                           <label>
-                            Hersteller
-                          </label>
-
-                          <input
-                            type="text"
-                            value={
-                              editingObjectManufacturer
-                            }
-                            onChange={(event) =>
-                              setEditingObjectManufacturer(
-                                event.target.value
-                              )
-                            }
-                          />
-                        </div>
-
-                        <div>
-                          <label>
-                            Modell
-                          </label>
-
-                          <input
-                            type="text"
-                            value={
-                              editingObjectModel
-                            }
-                            onChange={(event) =>
-                              setEditingObjectModel(
-                                event.target.value
-                              )
-                            }
-                          />
-                        </div>
-
-                        <div>
-                          <label>
-                            Kaufdatum
+                            Fälligkeitsdatum
                           </label>
 
                           <input
                             type="date"
                             value={
-                              editingObjectPurchaseDate
+                              editingTaskDueDate
                             }
                             onChange={(event) =>
-                              setEditingObjectPurchaseDate(
+                              setEditingTaskDueDate(
                                 event.target.value
                               )
                             }
                           />
                         </div>
 
+                        <div>
+                          <label>
+                            Wiederholungsintervall
+                          </label>
+
+                          <input
+                            type="number"
+                            min="1"
+                            value={
+                              editingTaskRecurrenceInterval
+                            }
+                            onChange={(event) =>
+                              setEditingTaskRecurrenceInterval(
+                                event.target.value
+                              )
+                            }
+                          />
+                        </div>
+
+                        <div>
+                          <label>
+                            Einheit
+                          </label>
+
+                          <select
+                            value={
+                              editingTaskRecurrenceUnit
+                            }
+                            onChange={(event) =>
+                              setEditingTaskRecurrenceUnit(
+                                event.target
+                                  .value as
+                                  | ""
+                                  | RecurrenceUnit
+                              )
+                            }
+                          >
+                            <option value="">
+                              Keine Wiederholung
+                            </option>
+
+                            <option value="MONTHS">
+                              Monate
+                            </option>
+
+                            <option value="YEARS">
+                              Jahre
+                            </option>
+                          </select>
+                        </div>
+
                         <button
                           type="button"
                           onClick={() =>
-                            handleUpdateHouseholdObject(
-                              householdObject.id
+                            handleUpdateMaintenanceTask(
+                              task.id
                             )
                           }
                         >
@@ -885,288 +1277,17 @@ function PropertyDetailPage() {
 
                         <button
                           type="button"
-                          onClick={() => {
-                            setEditingObjectId(
+                          onClick={() =>
+                            setEditingTaskId(
                               null
-                            );
-                            setEditingObjectName(
-                              ""
-                            );
-                            setEditingObjectDescription(
-                              ""
-                            );
-                            setEditingObjectManufacturer(
-                              ""
-                            );
-                            setEditingObjectModel(
-                              ""
-                            );
-                            setEditingObjectPurchaseDate(
-                              ""
-                            );
-                          }}
+                            )
+                          }
                         >
                           Abbrechen
                         </button>
                       </>
                     ) : (
                       <>
-                        <p>
-                          <strong>
-                            {
-                              householdObject.name
-                            }
-                          </strong>
-                        </p>
-
-                        <p>
-                          Hersteller:{" "}
-                          {householdObject.manufacturer ||
-                            "-"}
-                        </p>
-
-                        <p>
-                          Modell:{" "}
-                          {householdObject.model ||
-                            "-"}
-                        </p>
-
-                        <p>
-                          Kaufdatum:{" "}
-                          {householdObject.purchaseDate ||
-                            "-"}
-                        </p>
-
-                        <p>
-                          Beschreibung:{" "}
-                          {householdObject.description ||
-                            "-"}
-                        </p>
-
-                        <button
-                          type="button"
-                          onClick={() =>
-                            handleEditHouseholdObject(
-                              householdObject
-                            )
-                          }
-                        >
-                          Bearbeiten
-                        </button>
-
-                        <button
-                          type="button"
-                          onClick={() =>
-                            handleDeleteHouseholdObject(
-                              householdObject.id
-                            )
-                          }
-                        >
-                          Löschen
-                        </button>
-                      </>
-                    )}
-                  </li>
-                )
-              )}
-            </ul>
-          )}
-
-          <h3>Objekt anlegen</h3>
-
-          <form
-            onSubmit={
-              handleCreateHouseholdObject
-            }
-          >
-            <div>
-              <label htmlFor="objectName">
-                Name
-              </label>
-
-              <input
-                id="objectName"
-                type="text"
-                value={objectName}
-                onChange={(event) =>
-                  setObjectName(
-                    event.target.value
-                  )
-                }
-                required
-              />
-            </div>
-
-            <div>
-              <label htmlFor="objectDescription">
-                Beschreibung
-              </label>
-
-              <input
-                id="objectDescription"
-                type="text"
-                value={
-                  objectDescription
-                }
-                onChange={(event) =>
-                  setObjectDescription(
-                    event.target.value
-                  )
-                }
-              />
-            </div>
-
-            <div>
-              <label htmlFor="objectManufacturer">
-                Hersteller
-              </label>
-
-              <input
-                id="objectManufacturer"
-                type="text"
-                value={
-                  objectManufacturer
-                }
-                onChange={(event) =>
-                  setObjectManufacturer(
-                    event.target.value
-                  )
-                }
-              />
-            </div>
-
-            <div>
-              <label htmlFor="objectModel">
-                Modell
-              </label>
-
-              <input
-                id="objectModel"
-                type="text"
-                value={objectModel}
-                onChange={(event) =>
-                  setObjectModel(
-                    event.target.value
-                  )
-                }
-              />
-            </div>
-
-            <div>
-              <label htmlFor="objectPurchaseDate">
-                Kaufdatum
-              </label>
-
-              <input
-                id="objectPurchaseDate"
-                type="date"
-                value={
-                  objectPurchaseDate
-                }
-                onChange={(event) =>
-                  setObjectPurchaseDate(
-                    event.target.value
-                  )
-                }
-              />
-            </div>
-
-            <button type="submit">
-              Objekt anlegen
-            </button>
-          </form>
-        </>
-      )}
-
-      <hr />
-
-      <h2>Wartungsaufgaben</h2>
-
-      {selectedRoomId === null ? (
-        <p>
-          Bitte zuerst einen Raum auswählen.
-        </p>
-      ) : (
-        <>
-          <div>
-            <label htmlFor="maintenanceObject">
-              Objekt auswählen
-            </label>
-
-            <select
-              id="maintenanceObject"
-              value={selectedObjectId ?? ""}
-              onChange={(event) => {
-                const value =
-                  event.target.value;
-
-                if (value === "") {
-                  setSelectedObjectId(null);
-                  setMaintenanceTasks([]);
-                  return;
-                }
-
-                const objectId =
-                  Number(value);
-
-                setSelectedObjectId(
-                  objectId
-                );
-
-                setMaintenanceTasks([]);
-
-                loadMaintenanceTasks(
-                  objectId
-                );
-              }}
-            >
-              <option value="">
-                Objekt auswählen
-              </option>
-
-              {householdObjects.map(
-                (householdObject) => (
-                  <option
-                    key={
-                      householdObject.id
-                    }
-                    value={
-                      householdObject.id
-                    }
-                  >
-                    {
-                      householdObject.name
-                    }
-                  </option>
-                )
-              )}
-            </select>
-          </div>
-
-          {selectedObjectId === null ? (
-            <p>
-              Bitte zuerst ein Objekt
-              auswählen.
-            </p>
-          ) : (
-            <>
-              <h3>
-                Aufgaben des ausgewählten
-                Objekts
-              </h3>
-
-              {maintenanceTasks.length ===
-              0 ? (
-                <p>
-                  Noch keine
-                  Wartungsaufgaben
-                  vorhanden.
-                </p>
-              ) : (
-                <ul>
-                  {maintenanceTasks.map(
-                    (task) => (
-                      <li key={task.id}>
                         <p>
                           <strong>
                             {task.title}
@@ -1191,82 +1312,155 @@ function PropertyDetailPage() {
                             ? "Erledigt"
                             : "Offen"}
                         </p>
-                      </li>
-                    )
-                  )}
-                </ul>
+
+                        <p>
+                          Wiederholung:{" "}
+                          {task.recurrenceInterval &&
+                          task.recurrenceUnit
+                            ? `${task.recurrenceInterval} ${
+                                task.recurrenceUnit ===
+                                "MONTHS"
+                                  ? "Monate"
+                                  : "Jahre"
+                              }`
+                            : "Keine"}
+                        </p>
+
+                        <button
+                          type="button"
+                          onClick={() =>
+                            handleEditMaintenanceTask(
+                              task
+                            )
+                          }
+                        >
+                          Bearbeiten
+                        </button>
+                      </>
+                    )}
+                  </li>
+                )
               )}
+            </ul>
+          )}
 
-              <h3>
-                Wartungsaufgabe anlegen
-              </h3>
+          <h3>
+            Wartungsaufgabe anlegen
+          </h3>
 
-              <form
-                onSubmit={
-                  handleCreateMaintenanceTask
+          <form
+            onSubmit={
+              handleCreateMaintenanceTask
+            }
+          >
+            <div>
+              <label htmlFor="taskTitle">
+                Titel
+              </label>
+
+              <input
+                id="taskTitle"
+                type="text"
+                value={taskTitle}
+                onChange={(event) =>
+                  setTaskTitle(
+                    event.target.value
+                  )
+                }
+                required
+              />
+            </div>
+
+            <div>
+              <label htmlFor="taskDescription">
+                Beschreibung
+              </label>
+
+              <input
+                id="taskDescription"
+                type="text"
+                value={taskDescription}
+                onChange={(event) =>
+                  setTaskDescription(
+                    event.target.value
+                  )
+                }
+              />
+            </div>
+
+            <div>
+              <label htmlFor="taskDueDate">
+                Fälligkeitsdatum
+              </label>
+
+              <input
+                id="taskDueDate"
+                type="date"
+                value={taskDueDate}
+                onChange={(event) =>
+                  setTaskDueDate(
+                    event.target.value
+                  )
+                }
+              />
+            </div>
+
+            <div>
+              <label htmlFor="taskRecurrenceInterval">
+                Wiederholungsintervall
+              </label>
+
+              <input
+                id="taskRecurrenceInterval"
+                type="number"
+                min="1"
+                value={
+                  taskRecurrenceInterval
+                }
+                onChange={(event) =>
+                  setTaskRecurrenceInterval(
+                    event.target.value
+                  )
+                }
+              />
+            </div>
+
+            <div>
+              <label htmlFor="taskRecurrenceUnit">
+                Einheit
+              </label>
+
+              <select
+                id="taskRecurrenceUnit"
+                value={
+                  taskRecurrenceUnit
+                }
+                onChange={(event) =>
+                  setTaskRecurrenceUnit(
+                    event.target.value as
+                      | ""
+                      | RecurrenceUnit
+                  )
                 }
               >
-                <div>
-                  <label htmlFor="taskTitle">
-                    Titel
-                  </label>
+                <option value="">
+                  Keine Wiederholung
+                </option>
 
-                  <input
-                    id="taskTitle"
-                    type="text"
-                    value={taskTitle}
-                    onChange={(event) =>
-                      setTaskTitle(
-                        event.target.value
-                      )
-                    }
-                    required
-                  />
-                </div>
+                <option value="MONTHS">
+                  Monate
+                </option>
 
-                <div>
-                  <label htmlFor="taskDescription">
-                    Beschreibung
-                  </label>
+                <option value="YEARS">
+                  Jahre
+                </option>
+              </select>
+            </div>
 
-                  <input
-                    id="taskDescription"
-                    type="text"
-                    value={
-                      taskDescription
-                    }
-                    onChange={(event) =>
-                      setTaskDescription(
-                        event.target.value
-                      )
-                    }
-                  />
-                </div>
-
-                <div>
-                  <label htmlFor="taskDueDate">
-                    Fälligkeitsdatum
-                  </label>
-
-                  <input
-                    id="taskDueDate"
-                    type="date"
-                    value={taskDueDate}
-                    onChange={(event) =>
-                      setTaskDueDate(
-                        event.target.value
-                      )
-                    }
-                  />
-                </div>
-
-                <button type="submit">
-                  Wartungsaufgabe
-                  anlegen
-                </button>
-              </form>
-            </>
-          )}
+            <button type="submit">
+              Wartungsaufgabe anlegen
+            </button>
+          </form>
         </>
       )}
     </div>

@@ -1,6 +1,8 @@
 package digitales_hausbuch_backend.exception;
 
 import digitales_hausbuch_backend.householdobject.HouseholdObjectNotFoundException;
+import digitales_hausbuch_backend.maintenance.InvalidRecurrenceException;
+import digitales_hausbuch_backend.maintenance.MaintenanceTaskNotFoundException;
 import digitales_hausbuch_backend.property.PropertyNotFoundException;
 import digitales_hausbuch_backend.room.RoomNotFoundException;
 import digitales_hausbuch_backend.user.EmailAlreadyExistsException;
@@ -100,6 +102,36 @@ public class GlobalExceptionHandler {
 
         return ResponseEntity
                 .status(HttpStatus.NOT_FOUND)
+                .body(response);
+    }
+
+    @ExceptionHandler(MaintenanceTaskNotFoundException.class)
+    public ResponseEntity<Map<String, String>>
+    handleMaintenanceTaskNotFound(
+            MaintenanceTaskNotFoundException ex) {
+
+        Map<String, String> response =
+                new HashMap<>();
+
+        response.put(
+                "message",
+                ex.getMessage()
+        );
+
+        return ResponseEntity
+                .status(HttpStatus.NOT_FOUND)
+                .body(response);
+    }
+
+    @ExceptionHandler(InvalidRecurrenceException.class)
+    public ResponseEntity<Map<String, String>> handleInvalidRecurrence(
+            InvalidRecurrenceException ex) {
+
+        Map<String, String> response = new HashMap<>();
+        response.put("message", ex.getMessage());
+
+        return ResponseEntity
+                .status(HttpStatus.BAD_REQUEST)
                 .body(response);
     }
 }

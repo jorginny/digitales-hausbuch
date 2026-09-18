@@ -53,10 +53,17 @@ public class MaintenanceTaskService {
                         userEmail
                 );
 
+        validateRecurrence(
+                request.recurrenceInterval(),
+                request.recurrenceUnit()
+        );
+
         MaintenanceTask task = new MaintenanceTask(
                 request.title(),
                 request.description(),
                 request.dueDate(),
+                request.recurrenceInterval(),
+                request.recurrenceUnit(),
                 householdObject
         );
 
@@ -134,7 +141,76 @@ public class MaintenanceTaskService {
                 task.getDescription(),
                 task.getDueDate(),
                 task.isCompleted(),
+                task.getRecurrenceInterval(),
+                task.getRecurrenceUnit(),
                 task.getHouseholdObject().getId()
         );
     }
+
+    private void validateRecurrence(
+            Integer recurrenceInterval,
+            RecurrenceUnit recurrenceUnit) {
+
+        boolean intervalSet =
+                recurrenceInterval != null;
+
+        boolean unitSet =
+                recurrenceUnit != null;
+
+        if (intervalSet != unitSet) {
+            throw new InvalidRecurrenceException(
+                    "Wiederholungsintervall und Einheit müssen gemeinsam angegeben werden."
+            );
+        }
+    }
+
+    public MaintenanceTaskResponse updateMaintenanceTask(
+            Long propertyId,
+            Long roomId,
+            Long objectId,
+            Long taskId,
+            MaintenanceTaskRequest request,
+            String userEmail) {
+
+        HouseholdObject householdObject =
+                getOwnedHouseholdObject(
+                        propertyId,
+                        roomId,
+                        objectId,
+                        userEmail
+                );
+
+        MaintenanceTask task = maintenanceTaskRepository
+                .findByIdAndHouseholdObject(
+                        taskId,
+                        householdObject
+                )
+                .orElseThrow(() ->
+                        new MaintenanceTaskNotFoundException(
+                                "Wartungsaufgabe wurde nicht gefunden."
+                        )
+                );
+
+        validateRecurrence(
+                request.recurrenceInterval(),
+                request.recurrenceUnit()
+        );
+
+        task.setTitle(request.title());
+        task.setDescription(request.description());
+        task.setDueDate(request.dueDate());
+        task.setRecurrenceInterval(
+                request.recurrenceInterval()
+        );
+        task.setRecurrenceUnit(
+                request.recurrenceUnit()
+        );
+
+        MaintenanceTask savedTask =
+                maintenanceTaskRepository.save(task);
+
+        return toResponse(savedTask);
+    }
+
+
 }

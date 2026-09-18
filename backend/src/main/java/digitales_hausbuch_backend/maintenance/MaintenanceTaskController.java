@@ -61,4 +61,30 @@ public class MaintenanceTaskController {
 
         return ResponseEntity.ok(tasks);
     }
+
+    @PutMapping("/{taskId}")
+    public ResponseEntity<MaintenanceTaskResponse>
+    updateMaintenanceTask(
+            @PathVariable Long propertyId,
+            @PathVariable Long roomId,
+            @PathVariable Long objectId,
+            @PathVariable Long taskId,
+            @Valid @RequestBody MaintenanceTaskRequest request,
+            Authentication authentication) {
+
+        MaintenanceTaskResponse response =
+                maintenanceTaskService
+                        .updateMaintenanceTask(
+                                propertyId,
+                                roomId,
+                                objectId,
+                                taskId,
+                                request,
+                                authentication.getName()
+                        );
+
+        return ResponseEntity.ok(response);
+    }
+
+
 }

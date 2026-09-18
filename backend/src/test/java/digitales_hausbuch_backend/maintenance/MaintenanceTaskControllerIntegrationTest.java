@@ -18,6 +18,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 
 @SpringBootTest
 @AutoConfigureMockMvc
@@ -438,5 +439,391 @@ class MaintenanceTaskControllerIntegrationTest {
                 .andExpect(status().isNotFound());
 
         assertEquals(0, maintenanceTaskRepository.count());
+    }
+
+    @Test
+    void shouldCreateRecurringMaintenanceTask() throws Exception {
+
+        String userRequest = """
+        {
+          "email": "test@example.de",
+          "password": "MeinPasswort123"
+        }
+        """;
+
+        mockMvc.perform(post("/api/auth/register")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(userRequest))
+                .andExpect(status().isCreated());
+
+        MvcResult loginResult = mockMvc.perform(post("/api/auth/login")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(userRequest))
+                .andExpect(status().isOk())
+                .andReturn();
+
+        MockHttpSession session =
+                (MockHttpSession) loginResult.getRequest().getSession(false);
+
+        mockMvc.perform(post("/api/properties")
+                        .session(session)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                        {
+                          "name": "Mein Haus"
+                        }
+                        """))
+                .andExpect(status().isCreated());
+
+        Long propertyId =
+                propertyRepository.findAll().get(0).getId();
+
+        mockMvc.perform(post("/api/properties/{propertyId}/rooms", propertyId)
+                        .session(session)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                        {
+                          "name": "Keller"
+                        }
+                        """))
+                .andExpect(status().isCreated());
+
+        Long roomId =
+                roomRepository.findAll().get(0).getId();
+
+        mockMvc.perform(post(
+                        "/api/properties/{propertyId}/rooms/{roomId}/objects",
+                        propertyId,
+                        roomId)
+                        .session(session)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                        {
+                          "name": "Heizung"
+                        }
+                        """))
+                .andExpect(status().isCreated());
+
+        Long objectId =
+                householdObjectRepository.findAll().get(0).getId();
+
+        mockMvc.perform(post(
+                        "/api/properties/{propertyId}/rooms/{roomId}/objects/{objectId}/maintenance-tasks",
+                        propertyId,
+                        roomId,
+                        objectId)
+                        .session(session)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                        {
+                          "title": "Heizung warten",
+                          "dueDate": "2026-10-01",
+                          "recurrenceInterval": 12,
+                          "recurrenceUnit": "MONTHS"
+                        }
+                        """))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.recurrenceInterval").value(12))
+                .andExpect(jsonPath("$.recurrenceUnit").value("MONTHS"));
+    }
+
+    @Test
+    void shouldUpdateRecurringMaintenanceTask() throws Exception {
+
+        String userRequest = """
+        {
+          "email": "test@example.de",
+          "password": "MeinPasswort123"
+        }
+        """;
+
+        mockMvc.perform(post("/api/auth/register")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(userRequest))
+                .andExpect(status().isCreated());
+
+        MvcResult loginResult = mockMvc.perform(post("/api/auth/login")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(userRequest))
+                .andExpect(status().isOk())
+                .andReturn();
+
+        MockHttpSession session =
+                (MockHttpSession) loginResult.getRequest().getSession(false);
+
+        mockMvc.perform(post("/api/properties")
+                        .session(session)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                        {
+                          "name": "Mein Haus"
+                        }
+                        """))
+                .andExpect(status().isCreated());
+
+        Long propertyId =
+                propertyRepository.findAll().get(0).getId();
+
+        mockMvc.perform(post("/api/properties/{propertyId}/rooms", propertyId)
+                        .session(session)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                        {
+                          "name": "Keller"
+                        }
+                        """))
+                .andExpect(status().isCreated());
+
+        Long roomId =
+                roomRepository.findAll().get(0).getId();
+
+        mockMvc.perform(post(
+                        "/api/properties/{propertyId}/rooms/{roomId}/objects",
+                        propertyId,
+                        roomId)
+                        .session(session)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                        {
+                          "name": "Heizung"
+                        }
+                        """))
+                .andExpect(status().isCreated());
+
+        Long objectId =
+                householdObjectRepository.findAll().get(0).getId();
+
+        mockMvc.perform(post(
+                        "/api/properties/{propertyId}/rooms/{roomId}/objects/{objectId}/maintenance-tasks",
+                        propertyId,
+                        roomId,
+                        objectId)
+                        .session(session)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                        {
+                          "title": "Heizung warten",
+                          "recurrenceInterval": 12,
+                          "recurrenceUnit": "MONTHS"
+                        }
+                        """))
+                .andExpect(status().isCreated());
+
+        Long taskId =
+                maintenanceTaskRepository.findAll().get(0).getId();
+
+        mockMvc.perform(put(
+                        "/api/properties/{propertyId}/rooms/{roomId}/objects/{objectId}/maintenance-tasks/{taskId}",
+                        propertyId,
+                        roomId,
+                        objectId,
+                        taskId)
+                        .session(session)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                        {
+                          "title": "Heizung jährlich warten",
+                          "recurrenceInterval": 1,
+                          "recurrenceUnit": "YEARS"
+                        }
+                        """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.title").value("Heizung jährlich warten"))
+                .andExpect(jsonPath("$.recurrenceInterval").value(1))
+                .andExpect(jsonPath("$.recurrenceUnit").value("YEARS"));
+
+        MaintenanceTask updatedTask =
+                maintenanceTaskRepository.findById(taskId).orElseThrow();
+
+        assertEquals(1, updatedTask.getRecurrenceInterval());
+        assertEquals(
+                RecurrenceUnit.YEARS,
+                updatedTask.getRecurrenceUnit()
+        );
+    }
+
+    @Test
+    void shouldRejectNonPositiveRecurrenceInterval() throws Exception {
+
+        String userRequest = """
+        {
+          "email": "test@example.de",
+          "password": "MeinPasswort123"
+        }
+        """;
+
+        mockMvc.perform(post("/api/auth/register")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(userRequest))
+                .andExpect(status().isCreated());
+
+        MvcResult loginResult = mockMvc.perform(post("/api/auth/login")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(userRequest))
+                .andExpect(status().isOk())
+                .andReturn();
+
+        MockHttpSession session =
+                (MockHttpSession) loginResult.getRequest().getSession(false);
+
+        mockMvc.perform(post("/api/properties")
+                        .session(session)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                        {
+                          "name": "Mein Haus"
+                        }
+                        """))
+                .andExpect(status().isCreated());
+
+        Long propertyId =
+                propertyRepository.findAll().get(0).getId();
+
+        mockMvc.perform(post("/api/properties/{propertyId}/rooms", propertyId)
+                        .session(session)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                        {
+                          "name": "Keller"
+                        }
+                        """))
+                .andExpect(status().isCreated());
+
+        Long roomId =
+                roomRepository.findAll().get(0).getId();
+
+        mockMvc.perform(post(
+                        "/api/properties/{propertyId}/rooms/{roomId}/objects",
+                        propertyId,
+                        roomId)
+                        .session(session)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                        {
+                          "name": "Heizung"
+                        }
+                        """))
+                .andExpect(status().isCreated());
+
+        Long objectId =
+                householdObjectRepository.findAll().get(0).getId();
+
+
+        mockMvc.perform(post(
+                        "/api/properties/{propertyId}/rooms/{roomId}/objects/{objectId}/maintenance-tasks",
+                        propertyId,
+                        roomId,
+                        objectId)
+                        .session(session)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                        {
+                          "title": "Filter reinigen",
+                          "recurrenceInterval": 0,
+                          "recurrenceUnit": "MONTHS"
+                        }
+                        """))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void shouldRejectRecurrenceIntervalWithoutUnit() throws Exception {
+
+        String userRequest = """
+        {
+          "email": "test@example.de",
+          "password": "MeinPasswort123"
+        }
+        """;
+
+        mockMvc.perform(post("/api/auth/register")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(userRequest))
+                .andExpect(status().isCreated());
+
+        MvcResult loginResult = mockMvc.perform(post("/api/auth/login")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(userRequest))
+                .andExpect(status().isOk())
+                .andReturn();
+
+        MockHttpSession session =
+                (MockHttpSession) loginResult.getRequest().getSession(false);
+
+        mockMvc.perform(post("/api/properties")
+                        .session(session)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                        {
+                          "name": "Mein Haus"
+                        }
+                        """))
+                .andExpect(status().isCreated());
+
+        Long propertyId =
+                propertyRepository.findAll().get(0).getId();
+
+        mockMvc.perform(post("/api/properties/{propertyId}/rooms", propertyId)
+                        .session(session)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                        {
+                          "name": "Keller"
+                        }
+                        """))
+                .andExpect(status().isCreated());
+
+        Long roomId =
+                roomRepository.findAll().get(0).getId();
+
+        mockMvc.perform(post(
+                        "/api/properties/{propertyId}/rooms/{roomId}/objects",
+                        propertyId,
+                        roomId)
+                        .session(session)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                        {
+                          "name": "Heizung"
+                        }
+                        """))
+                .andExpect(status().isCreated());
+
+        Long objectId =
+                householdObjectRepository.findAll().get(0).getId();
+
+        mockMvc.perform(post(
+                        "/api/properties/{propertyId}/rooms/{roomId}/objects/{objectId}/maintenance-tasks",
+                        propertyId,
+                        roomId,
+                        objectId)
+                        .session(session)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                        {
+                          "title": "Heizung warten",
+                          "recurrenceInterval": 12,
+                          "recurrenceUnit": "MONTHS"
+                        }
+                        """))
+                .andExpect(status().isCreated());
+
+        Long taskId =
+                maintenanceTaskRepository.findAll().get(0).getId();
+
+        mockMvc.perform(post(
+                        "/api/properties/{propertyId}/rooms/{roomId}/objects/{objectId}/maintenance-tasks",
+                        propertyId,
+                        roomId,
+                        objectId)
+                        .session(session)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                        {
+                          "title": "Filter reinigen",
+                          "recurrenceInterval": 6
+                        }
+                        """))
+                .andExpect(status().isBadRequest());
     }
 }
