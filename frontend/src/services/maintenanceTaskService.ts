@@ -98,3 +98,26 @@ export async function updateMaintenanceTask(
 
   return response.json();
 }
+
+export async function completeMaintenanceTask(
+  propertyId: number,
+  roomId: number,
+  objectId: number,
+  taskId: number
+): Promise<MaintenanceTaskResponse> {
+  const response = await fetch(
+    `http://localhost:8080/api/properties/${propertyId}/rooms/${roomId}/objects/${objectId}/maintenance-tasks/${taskId}/complete`,
+    {
+      method: "PUT",
+      credentials: "include",
+    }
+  );
+
+  if (!response.ok) {
+    throw new Error(
+      "Wartungsaufgabe konnte nicht abgeschlossen werden."
+    );
+  }
+
+  return response.json();
+}

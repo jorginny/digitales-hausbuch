@@ -29,6 +29,8 @@ public class MaintenanceTask {
     @Enumerated(EnumType.STRING)
     private RecurrenceUnit recurrenceUnit;
 
+    private LocalDate completedAt;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "household_object_id", nullable = false)
     private HouseholdObject householdObject;
@@ -109,5 +111,13 @@ public class MaintenanceTask {
 
     public void setRecurrenceUnit(RecurrenceUnit recurrenceUnit) {
         this.recurrenceUnit = recurrenceUnit;
+    }
+
+    public LocalDate getCompletedAt() {
+        return completedAt;
+    }
+
+    public void setCompletedAt(LocalDate completedAt) {
+        this.completedAt = completedAt;
     }
 }

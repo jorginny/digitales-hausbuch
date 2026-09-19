@@ -13,6 +13,7 @@ import digitales_hausbuch_backend.user.User;
 import digitales_hausbuch_backend.user.UserRepository;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDate;
 import java.util.List;
 
 @Service
@@ -141,6 +142,7 @@ public class MaintenanceTaskService {
                 task.getDescription(),
                 task.getDueDate(),
                 task.isCompleted(),
+                task.getCompletedAt(),
                 task.getRecurrenceInterval(),
                 task.getRecurrenceUnit(),
                 task.getHouseholdObject().getId()
@@ -205,6 +207,71 @@ public class MaintenanceTaskService {
         task.setRecurrenceUnit(
                 request.recurrenceUnit()
         );
+
+        MaintenanceTask savedTask =
+                maintenanceTaskRepository.save(task);
+
+        return toResponse(savedTask);
+    }
+
+    public MaintenanceTaskResponse completeMaintenanceTask(
+            Long propertyId,
+            Long roomId,
+            Long objectId,
+            Long taskId,
+            String userEmail) {
+
+        HouseholdObject householdObject =
+                getOwnedHouseholdObject(
+                        propertyId,
+                        roomId,
+                        objectId,
+                        userEmail
+                );
+
+        MaintenanceTask task =
+                maintenanceTaskRepository
+                        .findByIdAndHouseholdObject(
+                                taskId,
+                                householdObject
+                        )
+                        .orElseThrow(() ->
+                                new MaintenanceTaskNotFoundException(
+                                        "Wartungsaufgabe wurde nicht gefunden."
+                                )
+                        );
+
+        task.setCompletedAt(LocalDate.now());
+
+        if (
+                task.getRecurrenceInterval() != null &&
+                        task.getRecurrenceUnit() != null
+        ) {
+
+            LocalDate nextDueDate;
+
+            if (task.getRecurrenceUnit() == RecurrenceUnit.MONTHS) {
+
+                nextDueDate = task.getDueDate()
+                        .plusMonths(
+                                task.getRecurrenceInterval()
+                        );
+
+            } else {
+
+                nextDueDate = task.getDueDate()
+                        .plusYears(
+                                task.getRecurrenceInterval()
+                        );
+            }
+
+            task.setDueDate(nextDueDate);
+            task.setCompleted(false);
+
+        } else {
+
+            task.setCompleted(true);
+        }
 
         MaintenanceTask savedTask =
                 maintenanceTaskRepository.save(task);

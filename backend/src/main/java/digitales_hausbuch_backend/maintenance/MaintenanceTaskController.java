@@ -86,5 +86,25 @@ public class MaintenanceTaskController {
         return ResponseEntity.ok(response);
     }
 
+    @PutMapping("/{taskId}/complete")
+    public ResponseEntity<MaintenanceTaskResponse> completeMaintenanceTask(
+            @PathVariable Long propertyId,
+            @PathVariable Long roomId,
+            @PathVariable Long objectId,
+            @PathVariable Long taskId,
+            Authentication authentication) {
+
+        MaintenanceTaskResponse response =
+                maintenanceTaskService.completeMaintenanceTask(
+                        propertyId,
+                        roomId,
+                        objectId,
+                        taskId,
+                        authentication.getName()
+                );
+
+        return ResponseEntity.ok(response);
+    }
+
 
 }

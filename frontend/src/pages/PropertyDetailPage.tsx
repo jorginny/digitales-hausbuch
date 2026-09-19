@@ -27,6 +27,7 @@ import {
   createMaintenanceTask,
   getMaintenanceTasks,
   updateMaintenanceTask,
+  completeMaintenanceTask,
   type MaintenanceTaskResponse,
   type RecurrenceUnit,
 } from "../services/maintenanceTaskService";
@@ -461,8 +462,7 @@ function PropertyDetailPage() {
               editingObjectDescription,
             manufacturer:
               editingObjectManufacturer,
-            model:
-              editingObjectModel,
+            model: editingObjectModel,
             purchaseDate:
               editingObjectPurchaseDate ||
               undefined,
@@ -702,14 +702,50 @@ function PropertyDetailPage() {
       );
 
       setEditingTaskId(null);
-      setEditingTaskTitle("");
-      setEditingTaskDescription("");
-      setEditingTaskDueDate("");
-      setEditingTaskRecurrenceInterval("");
-      setEditingTaskRecurrenceUnit("");
 
       setMessage(
         "Wartungsaufgabe wurde erfolgreich aktualisiert."
+      );
+    } catch (error) {
+      if (error instanceof Error) {
+        setError(error.message);
+      }
+    }
+  };
+
+  const handleCompleteMaintenanceTask = async (
+    taskId: number
+  ) => {
+    if (
+      !id ||
+      selectedRoomId === null ||
+      selectedObjectId === null
+    ) {
+      return;
+    }
+
+    setError("");
+    setMessage("");
+
+    try {
+      const updatedTask =
+        await completeMaintenanceTask(
+          Number(id),
+          selectedRoomId,
+          selectedObjectId,
+          taskId
+        );
+
+      setMaintenanceTasks((currentTasks) =>
+        currentTasks.map((task) =>
+          task.id === taskId
+            ? updatedTask
+            : task
+        )
+      );
+
+      setMessage(
+        "Wartungsaufgabe wurde abgeschlossen."
       );
     } catch (error) {
       if (error instanceof Error) {
@@ -1314,6 +1350,12 @@ function PropertyDetailPage() {
                         </p>
 
                         <p>
+                          Zuletzt erledigt:{" "}
+                          {task.completedAt ||
+                            "-"}
+                        </p>
+
+                        <p>
                           Wiederholung:{" "}
                           {task.recurrenceInterval &&
                           task.recurrenceUnit
@@ -1336,6 +1378,19 @@ function PropertyDetailPage() {
                         >
                           Bearbeiten
                         </button>
+
+                        {!task.completed && (
+                          <button
+                            type="button"
+                            onClick={() =>
+                              handleCompleteMaintenanceTask(
+                                task.id
+                              )
+                            }
+                          >
+                            Erledigt
+                          </button>
+                        )}
                       </>
                     )}
                   </li>

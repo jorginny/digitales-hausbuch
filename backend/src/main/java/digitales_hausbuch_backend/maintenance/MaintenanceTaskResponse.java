@@ -14,6 +14,8 @@ public record MaintenanceTaskResponse(
 
         boolean completed,
 
+        LocalDate completedAt,
+
         Integer recurrenceInterval,
 
         RecurrenceUnit recurrenceUnit,
