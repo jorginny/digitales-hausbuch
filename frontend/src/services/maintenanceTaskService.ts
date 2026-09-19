@@ -12,6 +12,7 @@ export type MaintenanceTaskResponse = {
   description?: string;
   dueDate?: string;
   completed: boolean;
+  completedAt?: string;
   recurrenceInterval?: number;
   recurrenceUnit?: RecurrenceUnit;
   householdObjectId: number;
