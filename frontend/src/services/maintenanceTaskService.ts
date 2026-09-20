@@ -122,3 +122,37 @@ export async function completeMaintenanceTask(
 
   return response.json();
 }
+
+export type MaintenanceOverviewResponse = {
+  taskId: number;
+  title: string;
+  description?: string;
+  dueDate?: string;
+  completedAt?: string;
+  recurrenceInterval?: number;
+  recurrenceUnit?: RecurrenceUnit;
+  objectId: number;
+  objectName: string;
+  roomId: number;
+  roomName: string;
+};
+
+export async function getMaintenanceOverview(
+  propertyId: number
+): Promise<MaintenanceOverviewResponse[]> {
+  const response = await fetch(
+    `http://localhost:8080/api/properties/${propertyId}/maintenance-tasks`,
+    {
+      method: "GET",
+      credentials: "include",
+    }
+  );
+
+  if (!response.ok) {
+    throw new Error(
+      "Wartungsübersicht konnte nicht geladen werden."
+    );
+  }
+
+  return response.json();
+}

@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useParams } from "react-router";
+import { Link, useParams } from "react-router";
 
 import PropertyForm from "../components/PropertyForm";
 import RoomSection from "../components/RoomSection";
@@ -41,6 +41,12 @@ function PropertyDetailPage() {
   return (
     <div>
       <h1>Immobilie verwalten</h1>
+
+      <Link
+        to={`/properties/${propertyId}/maintenance`}
+      >
+        Zur Wartungsübersicht
+      </Link>
 
       <PropertyForm
         propertyId={propertyId}

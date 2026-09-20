@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Navigate } from "react-router";
 
+
 type ProtectedRouteProps = {
   children: React.ReactNode;
 };

@@ -7,6 +7,7 @@ import ProtectedRoute from "./components/ProtectedRoute";
 import CreatePropertyPage from "./pages/CreatePropertyPage";
 import PropertyDetailPage from "./pages/PropertyDetailPage";
 import PropertyListPage from "./pages/PropertyListPage";
+import MaintenanceOverviewPage from "./pages/MaintenanceOverviewPage";
 
 
 function App() {
@@ -50,6 +51,15 @@ function App() {
           element={
             <ProtectedRoute>
               <PropertyListPage />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/properties/:id/maintenance"
+          element={
+            <ProtectedRoute>
+              <MaintenanceOverviewPage />
             </ProtectedRoute>
           }
         />

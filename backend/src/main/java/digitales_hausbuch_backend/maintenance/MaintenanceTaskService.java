@@ -279,5 +279,58 @@ public class MaintenanceTaskService {
         return toResponse(savedTask);
     }
 
+    public List<MaintenanceOverviewResponse> getOpenMaintenanceTasks(
+            Long propertyId,
+            String userEmail
+    ) {
+        User user = userRepository
+                .findByEmail(userEmail)
+                .orElseThrow(() ->
+                        new RuntimeException("Benutzer wurde nicht gefunden.")
+                );
+
+        Property property = propertyRepository
+                .findByIdAndOwner(propertyId, user)
+                .orElseThrow(() ->
+                        new PropertyNotFoundException(
+                                "Immobilie wurde nicht gefunden."
+                        )
+                );
+
+        List<MaintenanceTask> tasks =
+                maintenanceTaskRepository
+                        .findByHouseholdObjectRoomPropertyAndCompletedFalse(
+                                property
+                        );
+
+        return tasks.stream()
+                .map(this::toOverviewResponse)
+                .toList();
+    }
+
+    private MaintenanceOverviewResponse toOverviewResponse(
+            MaintenanceTask task
+    ) {
+        HouseholdObject householdObject =
+                task.getHouseholdObject();
+
+        Room room =
+                householdObject.getRoom();
+
+        return new MaintenanceOverviewResponse(
+                task.getId(),
+                task.getTitle(),
+                task.getDescription(),
+                task.getDueDate(),
+                task.getCompletedAt(),
+                task.getRecurrenceInterval(),
+                task.getRecurrenceUnit(),
+                householdObject.getId(),
+                householdObject.getName(),
+                room.getId(),
+                room.getName()
+        );
+    }
+
 
 }
