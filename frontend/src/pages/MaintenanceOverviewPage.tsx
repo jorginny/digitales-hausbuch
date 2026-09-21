@@ -6,14 +6,54 @@ import {
   type MaintenanceOverviewResponse,
 } from "../services/maintenanceTaskService";
 
+type DueStatus =
+  | "Überfällig"
+  | "Bald fällig"
+  | "Später"
+  | "Kein Termin";
+
+function getDueStatus(
+  dueDate?: string
+): DueStatus {
+  if (!dueDate) {
+    return "Kein Termin";
+  }
+
+  const today = new Date();
+  const due = new Date(dueDate);
+
+  today.setHours(0, 0, 0, 0);
+  due.setHours(0, 0, 0, 0);
+
+  if (due < today) {
+    return "Überfällig";
+  }
+
+  const thirtyDaysFromNow =
+    new Date(today);
+
+  thirtyDaysFromNow.setDate(
+    thirtyDaysFromNow.getDate() + 30
+  );
+
+  if (due <= thirtyDaysFromNow) {
+    return "Bald fällig";
+  }
+
+  return "Später";
+}
+
 function MaintenanceOverviewPage() {
   const { id } = useParams();
 
   const [tasks, setTasks] =
     useState<MaintenanceOverviewResponse[]>([]);
 
-  const [error, setError] = useState("");
-  const [loading, setLoading] = useState(true);
+  const [error, setError] =
+    useState("");
+
+  const [loading, setLoading] =
+    useState(true);
 
   useEffect(() => {
     if (!id) {
@@ -76,6 +116,13 @@ function MaintenanceOverviewPage() {
           {tasks.map((task) => (
             <li key={task.taskId}>
               <h3>{task.title}</h3>
+
+              <p>
+                Status:{" "}
+                {getDueStatus(
+                  task.dueDate
+                )}
+              </p>
 
               <p>
                 Raum: {task.roomName}
