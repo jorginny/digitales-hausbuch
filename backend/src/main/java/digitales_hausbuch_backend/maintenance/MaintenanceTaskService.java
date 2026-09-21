@@ -13,6 +13,7 @@ import digitales_hausbuch_backend.user.User;
 import digitales_hausbuch_backend.user.UserRepository;
 import org.springframework.stereotype.Service;
 
+
 import java.time.LocalDate;
 import java.util.List;
 
@@ -24,15 +25,18 @@ public class MaintenanceTaskService {
     private final RoomRepository roomRepository;
     private final PropertyRepository propertyRepository;
     private final UserRepository userRepository;
+    private final MaintenanceRecordRepository maintenanceRecordRepository;
 
     public MaintenanceTaskService(
             MaintenanceTaskRepository maintenanceTaskRepository,
+            MaintenanceRecordRepository maintenanceRecordRepository,
             HouseholdObjectRepository householdObjectRepository,
             RoomRepository roomRepository,
             PropertyRepository propertyRepository,
-            UserRepository userRepository) {
-
+            UserRepository userRepository
+    ) {
         this.maintenanceTaskRepository = maintenanceTaskRepository;
+        this.maintenanceRecordRepository = maintenanceRecordRepository;
         this.householdObjectRepository = householdObjectRepository;
         this.roomRepository = roomRepository;
         this.propertyRepository = propertyRepository;
@@ -219,7 +223,9 @@ public class MaintenanceTaskService {
             Long roomId,
             Long objectId,
             Long taskId,
-            String userEmail) {
+            String note,
+            String userEmail
+    ) {
 
         HouseholdObject householdObject =
                 getOwnedHouseholdObject(
@@ -241,7 +247,18 @@ public class MaintenanceTaskService {
                                 )
                         );
 
-        task.setCompletedAt(LocalDate.now());
+        LocalDate completedAt = LocalDate.now();
+
+        MaintenanceRecord record =
+                new MaintenanceRecord(
+                        completedAt,
+                        note,
+                        task
+                );
+
+        maintenanceRecordRepository.save(record);
+
+        task.setCompletedAt(completedAt);
 
         if (
                 task.getRecurrenceInterval() != null &&
@@ -252,17 +269,19 @@ public class MaintenanceTaskService {
 
             if (task.getRecurrenceUnit() == RecurrenceUnit.MONTHS) {
 
-                nextDueDate = task.getDueDate()
-                        .plusMonths(
-                                task.getRecurrenceInterval()
-                        );
+                nextDueDate =
+                        task.getDueDate()
+                                .plusMonths(
+                                        task.getRecurrenceInterval()
+                                );
 
             } else {
 
-                nextDueDate = task.getDueDate()
-                        .plusYears(
-                                task.getRecurrenceInterval()
-                        );
+                nextDueDate =
+                        task.getDueDate()
+                                .plusYears(
+                                        task.getRecurrenceInterval()
+                                );
             }
 
             task.setDueDate(nextDueDate);
@@ -327,6 +346,52 @@ public class MaintenanceTaskService {
                 householdObject.getName(),
                 room.getId(),
                 room.getName()
+        );
+    }
+
+    public List<MaintenanceRecordResponse> getMaintenanceHistory(
+            Long propertyId,
+            Long roomId,
+            Long objectId,
+            Long taskId,
+            String userEmail
+    ) {
+
+        HouseholdObject householdObject =
+                getOwnedHouseholdObject(
+                        propertyId,
+                        roomId,
+                        objectId,
+                        userEmail
+                );
+
+        MaintenanceTask task =
+                maintenanceTaskRepository
+                        .findByIdAndHouseholdObject(
+                                taskId,
+                                householdObject
+                        )
+                        .orElseThrow(() ->
+                                new MaintenanceTaskNotFoundException(
+                                        "Wartungsaufgabe wurde nicht gefunden."
+                                )
+                        );
+
+        return maintenanceRecordRepository
+                .findByMaintenanceTaskOrderByCompletedAtDesc(task)
+                .stream()
+                .map(this::toMaintenanceRecordResponse)
+                .toList();
+    }
+
+    private MaintenanceRecordResponse toMaintenanceRecordResponse(
+            MaintenanceRecord record
+    ) {
+        return new MaintenanceRecordResponse(
+                record.getId(),
+                record.getCompletedAt(),
+                record.getNote(),
+                record.getMaintenanceTask().getId()
         );
     }
 

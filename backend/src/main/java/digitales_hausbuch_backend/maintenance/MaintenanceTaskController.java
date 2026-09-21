@@ -92,7 +92,15 @@ public class MaintenanceTaskController {
             @PathVariable Long roomId,
             @PathVariable Long objectId,
             @PathVariable Long taskId,
-            Authentication authentication) {
+            @RequestBody(required = false)
+            CompleteMaintenanceTaskRequest request,
+            Authentication authentication
+    ) {
+
+        String note =
+                request != null
+                        ? request.note()
+                        : null;
 
         MaintenanceTaskResponse response =
                 maintenanceTaskService.completeMaintenanceTask(
@@ -100,10 +108,32 @@ public class MaintenanceTaskController {
                         roomId,
                         objectId,
                         taskId,
+                        note,
                         authentication.getName()
                 );
 
         return ResponseEntity.ok(response);
+    }
+
+    @GetMapping("/{taskId}/history")
+    public ResponseEntity<List<MaintenanceRecordResponse>> getMaintenanceHistory(
+            @PathVariable Long propertyId,
+            @PathVariable Long roomId,
+            @PathVariable Long objectId,
+            @PathVariable Long taskId,
+            Authentication authentication
+    ) {
+
+        List<MaintenanceRecordResponse> history =
+                maintenanceTaskService.getMaintenanceHistory(
+                        propertyId,
+                        roomId,
+                        objectId,
+                        taskId,
+                        authentication.getName()
+                );
+
+        return ResponseEntity.ok(history);
     }
 
 

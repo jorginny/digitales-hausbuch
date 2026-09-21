@@ -3,8 +3,10 @@ import { useEffect, useState } from "react";
 import {
   completeMaintenanceTask,
   createMaintenanceTask,
+  getMaintenanceHistory,
   getMaintenanceTasks,
   updateMaintenanceTask,
+  type MaintenanceRecordResponse,
   type MaintenanceTaskResponse,
   type RecurrenceUnit,
 } from "../services/maintenanceTaskService";
@@ -70,6 +72,19 @@ function MaintenanceTaskSection({
     setEditingTaskRecurrenceUnit,
   ] = useState<"" | RecurrenceUnit>("");
 
+  // Abschluss / Historie
+  const [completionNotes, setCompletionNotes] =
+    useState<Record<number, string>>({});
+
+  const [historyTaskId, setHistoryTaskId] =
+    useState<number | null>(null);
+
+  const [history, setHistory] =
+    useState<MaintenanceRecordResponse[]>([]);
+
+  const [historyLoading, setHistoryLoading] =
+    useState(false);
+
   const [message, setMessage] =
     useState("");
 
@@ -82,6 +97,8 @@ function MaintenanceTaskSection({
       selectedObjectId === null
     ) {
       setMaintenanceTasks([]);
+      setHistory([]);
+      setHistoryTaskId(null);
       return;
     }
 
@@ -137,9 +154,7 @@ function MaintenanceTaskSection({
       const recurrenceInterval =
         taskRecurrenceInterval === ""
           ? undefined
-          : Number(
-              taskRecurrenceInterval
-            );
+          : Number(taskRecurrenceInterval);
 
       const recurrenceUnit =
         taskRecurrenceUnit === ""
@@ -154,16 +169,10 @@ function MaintenanceTaskSection({
             selectedObjectId,
             {
               title: taskTitle,
-
-              description:
-                taskDescription,
-
+              description: taskDescription,
               dueDate:
-                taskDueDate ||
-                undefined,
-
+                taskDueDate || undefined,
               recurrenceInterval,
-
               recurrenceUnit,
             }
           );
@@ -308,12 +317,16 @@ function MaintenanceTaskSection({
       setMessage("");
 
       try {
+        const note =
+          completionNotes[taskId] ?? "";
+
         const updatedTask =
           await completeMaintenanceTask(
             propertyId,
             selectedRoomId,
             selectedObjectId,
-            taskId
+            taskId,
+            note
           );
 
         setMaintenanceTasks(
@@ -326,14 +339,98 @@ function MaintenanceTaskSection({
             )
         );
 
-        setMessage(
-          "Wartungsaufgabe wurde abgeschlossen."
+        setCompletionNotes(
+          (currentNotes) => ({
+            ...currentNotes,
+            [taskId]: "",
+          })
         );
+
+        setMessage(
+          "Wartungsaufgabe wurde abgeschlossen und in der Historie gespeichert."
+        );
+
+        if (historyTaskId === taskId) {
+          await refreshHistory(
+            taskId
+          );
+        }
       } catch (error) {
         if (error instanceof Error) {
           setError(error.message);
         }
       }
+    };
+
+  const handleLoadHistory =
+    async (taskId: number) => {
+      if (
+        selectedRoomId === null ||
+        selectedObjectId === null
+      ) {
+        return;
+      }
+
+      // Erneuter Klick schließt die Historie
+      if (historyTaskId === taskId) {
+        setHistoryTaskId(null);
+        setHistory([]);
+        return;
+      }
+
+      setError("");
+      setHistoryLoading(true);
+
+      try {
+        const loadedHistory =
+          await getMaintenanceHistory(
+            propertyId,
+            selectedRoomId,
+            selectedObjectId,
+            taskId
+          );
+
+        setHistory(
+          loadedHistory
+        );
+
+        setHistoryTaskId(
+          taskId
+        );
+      } catch (error) {
+        if (error instanceof Error) {
+          setError(error.message);
+        }
+      } finally {
+        setHistoryLoading(false);
+      }
+    };
+
+    const refreshHistory = async (
+        taskId: number
+        ) => {
+        if (
+            selectedRoomId === null ||
+            selectedObjectId === null
+        ) {
+            return;
+        }
+
+        try {
+            const loadedHistory =
+            await getMaintenanceHistory(
+                propertyId,
+                selectedRoomId,
+                selectedObjectId,
+                taskId
+            );
+
+            setHistory(loadedHistory);
+        } catch (error) {
+            if (error instanceof Error) {
+            setError(error.message);
+            }
+        }
     };
 
   if (selectedRoomId === null) {
@@ -514,11 +611,11 @@ function MaintenanceTaskSection({
 
                     <button
                       type="button"
-                      onClick={() => {
+                      onClick={() =>
                         setEditingTaskId(
                           null
-                        );
-                      }}
+                        )
+                      }
                     >
                       Abbrechen
                     </button>
@@ -582,16 +679,115 @@ function MaintenanceTaskSection({
                     </button>
 
                     {!task.completed && (
-                      <button
-                        type="button"
-                        onClick={() =>
-                          handleCompleteMaintenanceTask(
-                            task.id
-                          )
-                        }
-                      >
-                        Erledigt
-                      </button>
+                      <>
+                        <div>
+                          <label
+                            htmlFor={`completionNote-${task.id}`}
+                          >
+                            Notiz zur Durchführung
+                          </label>
+
+                          <input
+                            id={`completionNote-${task.id}`}
+                            type="text"
+                            value={
+                              completionNotes[
+                                task.id
+                              ] ?? ""
+                            }
+                            onChange={(
+                              event
+                            ) =>
+                              setCompletionNotes(
+                                (
+                                  currentNotes
+                                ) => ({
+                                  ...currentNotes,
+                                  [task.id]:
+                                    event
+                                      .target
+                                      .value,
+                                })
+                              )
+                            }
+                            placeholder="Optional"
+                          />
+                        </div>
+
+                        <button
+                          type="button"
+                          onClick={() =>
+                            handleCompleteMaintenanceTask(
+                              task.id
+                            )
+                          }
+                        >
+                          Erledigt
+                        </button>
+                      </>
+                    )}
+
+                    <button
+                      type="button"
+                      onClick={() =>
+                        handleLoadHistory(
+                          task.id
+                        )
+                      }
+                    >
+                      {historyTaskId ===
+                      task.id
+                        ? "Historie schließen"
+                        : "Historie anzeigen"}
+                    </button>
+
+                    {historyTaskId ===
+                      task.id && (
+                      <div>
+                        <h4>
+                          Historie
+                        </h4>
+
+                        {historyLoading ? (
+                          <p>
+                            Historie wird
+                            geladen...
+                          </p>
+                        ) : history.length ===
+                          0 ? (
+                          <p>
+                            Noch keine
+                            durchgeführten
+                            Arbeiten vorhanden.
+                          </p>
+                        ) : (
+                          <ul>
+                            {history.map(
+                              (record) => (
+                                <li
+                                  key={
+                                    record.id
+                                  }
+                                >
+                                  <p>
+                                    Durchgeführt
+                                    am:{" "}
+                                    {
+                                      record.completedAt
+                                    }
+                                  </p>
+
+                                  <p>
+                                    Notiz:{" "}
+                                    {record.note ||
+                                      "-"}
+                                  </p>
+                                </li>
+                              )
+                            )}
+                          </ul>
+                        )}
+                      </div>
                     )}
                   </>
                 )}

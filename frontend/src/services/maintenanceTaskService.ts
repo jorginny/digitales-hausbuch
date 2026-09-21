@@ -18,6 +18,13 @@ export type MaintenanceTaskResponse = {
   householdObjectId: number;
 };
 
+export type MaintenanceRecordResponse = { 
+    id: number; 
+    completedAt: string; 
+    note?: string; 
+    maintenanceTaskId: number; 
+};
+
 export async function createMaintenanceTask(
   propertyId: number,
   roomId: number,
@@ -100,28 +107,28 @@ export async function updateMaintenanceTask(
   return response.json();
 }
 
-export async function completeMaintenanceTask(
-  propertyId: number,
-  roomId: number,
-  objectId: number,
-  taskId: number
-): Promise<MaintenanceTaskResponse> {
-  const response = await fetch(
-    `http://localhost:8080/api/properties/${propertyId}/rooms/${roomId}/objects/${objectId}/maintenance-tasks/${taskId}/complete`,
-    {
-      method: "PUT",
-      credentials: "include",
+export async function completeMaintenanceTask( 
+    propertyId: number, 
+    roomId: number, 
+    objectId: number, 
+    taskId: number, 
+    note?: string 
+): Promise<MaintenanceTaskResponse> { 
+    const response = await fetch( 
+        `http://localhost:8080/api/properties/${propertyId}/rooms/${roomId}/objects/${objectId}/maintenance-tasks/${taskId}/complete`, 
+        { 
+            method: "PUT", 
+            headers: { "Content-Type": "application/json", }, 
+            credentials: "include", 
+            body: JSON.stringify({ note: note || null, }), 
+        } ); 
+        
+        if (!response.ok) { 
+            throw new Error( "Wartungsaufgabe konnte nicht abgeschlossen werden." ); 
+        } 
+        
+        return response.json(); 
     }
-  );
-
-  if (!response.ok) {
-    throw new Error(
-      "Wartungsaufgabe konnte nicht abgeschlossen werden."
-    );
-  }
-
-  return response.json();
-}
 
 export type MaintenanceOverviewResponse = {
   taskId: number;
@@ -156,3 +163,21 @@ export async function getMaintenanceOverview(
 
   return response.json();
 }
+
+export async function getMaintenanceHistory( 
+    propertyId: number, 
+    roomId: number, 
+    objectId: number, 
+    taskId: number 
+): Promise<MaintenanceRecordResponse[]> { 
+    const response = await fetch( 
+        `http://localhost:8080/api/properties/${propertyId}/rooms/${roomId}/objects/${objectId}/maintenance-tasks/${taskId}/history`, { 
+            method: "GET", 
+            credentials: "include", } 
+        ); 
+        
+        if (!response.ok) { 
+            throw new Error( "Wartungshistorie konnte nicht geladen werden." ); 
+        } 
+        
+        return response.json(); }
