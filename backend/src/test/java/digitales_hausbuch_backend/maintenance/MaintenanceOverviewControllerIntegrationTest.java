@@ -367,6 +367,176 @@ class MaintenanceOverviewControllerIntegrationTest {
                 );
     }
 
+    @Test
+    void shouldReturnOpenMaintenanceTasksSortedByDueDateAscending()
+            throws Exception {
+
+        MockHttpSession session =
+                registerAndLogin(
+                        "user@example.de",
+                        "MeinPasswort123"
+                );
+
+        Long propertyId =
+                createProperty(
+                        session,
+                        "Mein Haus"
+                );
+
+        Long roomId =
+                createRoom(
+                        session,
+                        propertyId,
+                        "Keller"
+                );
+
+        Long objectId =
+                createHouseholdObject(
+                        session,
+                        propertyId,
+                        roomId,
+                        "Heizung"
+                );
+
+        createMaintenanceTask(
+                session,
+                propertyId,
+                roomId,
+                objectId,
+                """
+                {
+                  "title": "Späte Aufgabe",
+                  "dueDate": "2026-12-01"
+                }
+                """
+        );
+
+        createMaintenanceTask(
+                session,
+                propertyId,
+                roomId,
+                objectId,
+                """
+                {
+                  "title": "Frühe Aufgabe",
+                  "dueDate": "2026-10-01"
+                }
+                """
+        );
+
+        createMaintenanceTask(
+                session,
+                propertyId,
+                roomId,
+                objectId,
+                """
+                {
+                  "title": "Mittlere Aufgabe",
+                  "dueDate": "2026-11-01"
+                }
+                """
+        );
+
+        mockMvc.perform(
+                        get(
+                                "/api/properties/{propertyId}/maintenance-tasks",
+                                propertyId
+                        )
+                                .session(session)
+                )
+                .andExpect(status().isOk())
+                .andExpect(
+                        jsonPath("$[0].title")
+                                .value("Frühe Aufgabe")
+                )
+                .andExpect(
+                        jsonPath("$[1].title")
+                                .value("Mittlere Aufgabe")
+                )
+                .andExpect(
+                        jsonPath("$[2].title")
+                                .value("Späte Aufgabe")
+                );
+    }
+
+    @Test
+    void shouldReturnTasksWithoutDueDateAtTheEnd()
+            throws Exception {
+
+        MockHttpSession session =
+                registerAndLogin(
+                        "user@example.de",
+                        "MeinPasswort123"
+                );
+
+        Long propertyId =
+                createProperty(
+                        session,
+                        "Mein Haus"
+                );
+
+        Long roomId =
+                createRoom(
+                        session,
+                        propertyId,
+                        "Keller"
+                );
+
+        Long objectId =
+                createHouseholdObject(
+                        session,
+                        propertyId,
+                        roomId,
+                        "Waschmaschine"
+                );
+
+        createMaintenanceTask(
+                session,
+                propertyId,
+                roomId,
+                objectId,
+                """
+                {
+                  "title": "Ohne Termin"
+                }
+                """
+        );
+
+        createMaintenanceTask(
+                session,
+                propertyId,
+                roomId,
+                objectId,
+                """
+                {
+                  "title": "Mit Termin",
+                  "dueDate": "2026-10-01"
+                }
+                """
+        );
+
+        mockMvc.perform(
+                        get(
+                                "/api/properties/{propertyId}/maintenance-tasks",
+                                propertyId
+                        )
+                                .session(session)
+                )
+                .andExpect(status().isOk())
+                .andExpect(
+                        jsonPath("$[0].title")
+                                .value("Mit Termin")
+                )
+                .andExpect(
+                        jsonPath("$[1].title")
+                                .value("Ohne Termin")
+                )
+                .andExpect(
+                        jsonPath("$[1].dueDate")
+                                .doesNotExist()
+                );
+    }
+
     private MockHttpSession registerAndLogin(
             String email,
             String password

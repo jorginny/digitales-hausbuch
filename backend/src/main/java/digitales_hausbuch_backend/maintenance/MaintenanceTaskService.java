@@ -299,9 +299,7 @@ public class MaintenanceTaskService {
 
         List<MaintenanceTask> tasks =
                 maintenanceTaskRepository
-                        .findByHouseholdObjectRoomPropertyAndCompletedFalse(
-                                property
-                        );
+                        .findOpenTasksByPropertySorted(property);
 
         return tasks.stream()
                 .map(this::toOverviewResponse)
