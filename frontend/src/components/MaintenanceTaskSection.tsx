@@ -1,6 +1,31 @@
 import { useEffect, useState } from "react";
 
 import {
+  Alert,
+  Box,
+  Button,
+  Card,
+  CardActionArea,
+  CardActions,
+  CardContent,
+  Chip,
+  Collapse,
+  Divider,
+  MenuItem,
+  Paper,
+  Stack,
+  TextField,
+  Typography,
+} from "@mui/material";
+
+import AddIcon from "@mui/icons-material/Add";
+import BuildIcon from "@mui/icons-material/Build";
+import CheckCircleIcon from "@mui/icons-material/CheckCircle";
+import EditIcon from "@mui/icons-material/Edit";
+import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
+import HistoryIcon from "@mui/icons-material/History";
+
+import {
   completeMaintenanceTask,
   createMaintenanceTask,
   getMaintenanceHistory,
@@ -17,6 +42,65 @@ type MaintenanceTaskSectionProps = {
   selectedObjectId: number | null;
 };
 
+type DueStatus =
+  | "Überfällig"
+  | "Bald fällig"
+  | "Später"
+  | "Kein Termin";
+
+function getDueStatus(
+  dueDate?: string
+): DueStatus {
+  if (!dueDate) {
+    return "Kein Termin";
+  }
+
+  const today = new Date();
+  const due = new Date(dueDate);
+
+  today.setHours(0, 0, 0, 0);
+  due.setHours(0, 0, 0, 0);
+
+  if (due < today) {
+    return "Überfällig";
+  }
+
+  const thirtyDaysFromNow =
+    new Date(today);
+
+  thirtyDaysFromNow.setDate(
+    thirtyDaysFromNow.getDate() + 30
+  );
+
+  if (due <= thirtyDaysFromNow) {
+    return "Bald fällig";
+  }
+
+  return "Später";
+}
+
+function getDueStatusColor(
+  status: DueStatus
+):
+  | "error"
+  | "warning"
+  | "success"
+  | "default" {
+  switch (status) {
+    case "Überfällig":
+      return "error";
+
+    case "Bald fällig":
+      return "warning";
+
+    case "Später":
+      return "success";
+
+    case "Kein Termin":
+      return "default";
+  }
+}
+
 function MaintenanceTaskSection({
   propertyId,
   selectedRoomId,
@@ -25,7 +109,12 @@ function MaintenanceTaskSection({
   const [maintenanceTasks, setMaintenanceTasks] =
     useState<MaintenanceTaskResponse[]>([]);
 
-  // Neue Aufgabe
+  const [showCreateForm, setShowCreateForm] =
+    useState(false);
+
+  const [expandedTaskId, setExpandedTaskId] =
+    useState<number | null>(null);
+
   const [taskTitle, setTaskTitle] =
     useState("");
 
@@ -45,12 +134,13 @@ function MaintenanceTaskSection({
     setTaskRecurrenceUnit,
   ] = useState<"" | RecurrenceUnit>("");
 
-  // Aufgabe bearbeiten
   const [editingTaskId, setEditingTaskId] =
     useState<number | null>(null);
 
-  const [editingTaskTitle, setEditingTaskTitle] =
-    useState("");
+  const [
+    editingTaskTitle,
+    setEditingTaskTitle,
+  ] = useState("");
 
   const [
     editingTaskDescription,
@@ -72,9 +162,10 @@ function MaintenanceTaskSection({
     setEditingTaskRecurrenceUnit,
   ] = useState<"" | RecurrenceUnit>("");
 
-  // Abschluss / Historie
-  const [completionNotes, setCompletionNotes] =
-    useState<Record<number, string>>({});
+  const [
+    completionNotes,
+    setCompletionNotes,
+  ] = useState<Record<number, string>>({});
 
   const [historyTaskId, setHistoryTaskId] =
     useState<number | null>(null);
@@ -92,20 +183,25 @@ function MaintenanceTaskSection({
     useState("");
 
   useEffect(() => {
+    setMessage("");
+    setError("");
+
     if (
       selectedRoomId === null ||
       selectedObjectId === null
     ) {
       setMaintenanceTasks([]);
-      setHistory([]);
+      setShowCreateForm(false);
+      setExpandedTaskId(null);
+      setEditingTaskId(null);
       setHistoryTaskId(null);
+      setHistory([]);
+
       return;
     }
 
     const loadMaintenanceTasks =
       async () => {
-        setError("");
-
         try {
           const loadedTasks =
             await getMaintenanceTasks(
@@ -141,10 +237,6 @@ function MaintenanceTaskSection({
         selectedRoomId === null ||
         selectedObjectId === null
       ) {
-        setError(
-          "Bitte zuerst einen Raum und ein Objekt auswählen."
-        );
-
         return;
       }
 
@@ -154,7 +246,9 @@ function MaintenanceTaskSection({
       const recurrenceInterval =
         taskRecurrenceInterval === ""
           ? undefined
-          : Number(taskRecurrenceInterval);
+          : Number(
+              taskRecurrenceInterval
+            );
 
       const recurrenceUnit =
         taskRecurrenceUnit === ""
@@ -169,9 +263,11 @@ function MaintenanceTaskSection({
             selectedObjectId,
             {
               title: taskTitle,
-              description: taskDescription,
+              description:
+                taskDescription,
               dueDate:
-                taskDueDate || undefined,
+                taskDueDate ||
+                undefined,
               recurrenceInterval,
               recurrenceUnit,
             }
@@ -189,6 +285,8 @@ function MaintenanceTaskSection({
         setTaskDueDate("");
         setTaskRecurrenceInterval("");
         setTaskRecurrenceUnit("");
+
+        setShowCreateForm(false);
 
         setMessage(
           "Wartungsaufgabe wurde erfolgreich angelegt."
@@ -225,6 +323,14 @@ function MaintenanceTaskSection({
     setEditingTaskRecurrenceUnit(
       task.recurrenceUnit ?? ""
     );
+
+    setExpandedTaskId(task.id);
+    setMessage("");
+    setError("");
+  };
+
+  const handleCancelEdit = () => {
+    setEditingTaskId(null);
   };
 
   const handleUpdateMaintenanceTask =
@@ -240,8 +346,7 @@ function MaintenanceTaskSection({
       setMessage("");
 
       const recurrenceInterval =
-        editingTaskRecurrenceInterval ===
-        ""
+        editingTaskRecurrenceInterval === ""
           ? undefined
           : Number(
               editingTaskRecurrenceInterval
@@ -262,16 +367,12 @@ function MaintenanceTaskSection({
             {
               title:
                 editingTaskTitle,
-
               description:
                 editingTaskDescription,
-
               dueDate:
                 editingTaskDueDate ||
                 undefined,
-
               recurrenceInterval,
-
               recurrenceUnit,
             }
           );
@@ -288,12 +389,6 @@ function MaintenanceTaskSection({
 
         setEditingTaskId(null);
 
-        setEditingTaskTitle("");
-        setEditingTaskDescription("");
-        setEditingTaskDueDate("");
-        setEditingTaskRecurrenceInterval("");
-        setEditingTaskRecurrenceUnit("");
-
         setMessage(
           "Wartungsaufgabe wurde erfolgreich aktualisiert."
         );
@@ -303,6 +398,33 @@ function MaintenanceTaskSection({
         }
       }
     };
+
+  const refreshHistory = async (
+    taskId: number
+  ) => {
+    if (
+      selectedRoomId === null ||
+      selectedObjectId === null
+    ) {
+      return;
+    }
+
+    try {
+      const loadedHistory =
+        await getMaintenanceHistory(
+          propertyId,
+          selectedRoomId,
+          selectedObjectId,
+          taskId
+        );
+
+      setHistory(loadedHistory);
+    } catch (error) {
+      if (error instanceof Error) {
+        setError(error.message);
+      }
+    }
+  };
 
   const handleCompleteMaintenanceTask =
     async (taskId: number) => {
@@ -350,7 +472,9 @@ function MaintenanceTaskSection({
           "Wartungsaufgabe wurde abgeschlossen und in der Historie gespeichert."
         );
 
-        if (historyTaskId === taskId) {
+        if (
+          historyTaskId === taskId
+        ) {
           await refreshHistory(
             taskId
           );
@@ -371,10 +495,10 @@ function MaintenanceTaskSection({
         return;
       }
 
-      // Erneuter Klick schließt die Historie
       if (historyTaskId === taskId) {
         setHistoryTaskId(null);
         setHistory([]);
+
         return;
       }
 
@@ -406,513 +530,690 @@ function MaintenanceTaskSection({
       }
     };
 
-    const refreshHistory = async (
-        taskId: number
-        ) => {
-        if (
-            selectedRoomId === null ||
-            selectedObjectId === null
-        ) {
-            return;
-        }
-
-        try {
-            const loadedHistory =
-            await getMaintenanceHistory(
-                propertyId,
-                selectedRoomId,
-                selectedObjectId,
-                taskId
-            );
-
-            setHistory(loadedHistory);
-        } catch (error) {
-            if (error instanceof Error) {
-            setError(error.message);
-            }
-        }
-    };
-
-  if (selectedRoomId === null) {
-    return (
-      <section>
-        <h2>Wartungsaufgaben</h2>
-
-        <p>
-          Bitte zuerst einen Raum
-          auswählen.
-        </p>
-      </section>
-    );
-  }
-
-  if (selectedObjectId === null) {
-    return (
-      <section>
-        <h2>Wartungsaufgaben</h2>
-
-        <p>
-          Bitte zuerst ein Objekt
-          auswählen.
-        </p>
-      </section>
-    );
-  }
-
   return (
-    <section>
-      <h2>Wartungsaufgaben</h2>
+    <Paper elevation={2} sx={{ p: 3 }}>
+      <Stack spacing={3}>
+        <Stack
+          direction={{
+            xs: "column",
+            sm: "row",
+          }}
+          justifyContent="space-between"
+          alignItems={{
+            xs: "flex-start",
+            sm: "center",
+          }}
+          spacing={2}
+        >
+          <div>
+            <Typography
+              variant="h5"
+              component="h2"
+              gutterBottom
+            >
+              Wartungsaufgaben
+            </Typography>
 
-      {error && <p>{error}</p>}
-      {message && <p>{message}</p>}
+            <Typography
+              variant="body2"
+              color="text.secondary"
+            >
+              Verwalte Wartungen und
+              durchgeführte Arbeiten des
+              ausgewählten Objekts.
+            </Typography>
+          </div>
 
-      {maintenanceTasks.length === 0 ? (
-        <p>
-          Noch keine Wartungsaufgaben
-          vorhanden.
-        </p>
-      ) : (
-        <ul>
-          {maintenanceTasks.map(
-            (task) => (
-              <li key={task.id}>
-                {editingTaskId ===
-                task.id ? (
-                  <>
-                    <div>
-                      <label>
-                        Titel
-                      </label>
+          {selectedRoomId !== null &&
+            selectedObjectId !== null &&
+            !showCreateForm && (
+              <Button
+                variant="contained"
+                startIcon={<AddIcon />}
+                onClick={() => {
+                  setShowCreateForm(true);
+                  setMessage("");
+                  setError("");
+                }}
+              >
+                Neue Wartungsaufgabe
+              </Button>
+            )}
+        </Stack>
 
-                      <input
-                        type="text"
-                        value={
-                          editingTaskTitle
-                        }
-                        onChange={(
-                          event
-                        ) =>
-                          setEditingTaskTitle(
-                            event.target
-                              .value
-                          )
-                        }
-                      />
-                    </div>
+        {error && (
+          <Alert severity="error">
+            {error}
+          </Alert>
+        )}
 
-                    <div>
-                      <label>
-                        Beschreibung
-                      </label>
+        {message && (
+          <Alert severity="success">
+            {message}
+          </Alert>
+        )}
 
-                      <input
-                        type="text"
-                        value={
-                          editingTaskDescription
-                        }
-                        onChange={(
-                          event
-                        ) =>
-                          setEditingTaskDescription(
-                            event.target
-                              .value
-                          )
-                        }
-                      />
-                    </div>
+        {selectedRoomId === null ? (
+          <Alert severity="info">
+            Bitte zuerst einen Raum auswählen.
+          </Alert>
+        ) : selectedObjectId === null ? (
+          <Alert severity="info">
+            Bitte zuerst ein Objekt auswählen.
+          </Alert>
+        ) : (
+          <>
+            {showCreateForm && (
+              <Box
+                component="form"
+                onSubmit={
+                  handleCreateMaintenanceTask
+                }
+              >
+                <Stack spacing={2}>
+                  <Typography
+                    variant="h6"
+                    component="h3"
+                  >
+                    Neue Wartungsaufgabe
+                  </Typography>
 
-                    <div>
-                      <label>
-                        Fälligkeitsdatum
-                      </label>
+                  <TextField
+                    label="Titel"
+                    value={taskTitle}
+                    onChange={(event) =>
+                      setTaskTitle(
+                        event.target.value
+                      )
+                    }
+                    required
+                    fullWidth
+                  />
 
-                      <input
-                        type="date"
-                        value={
-                          editingTaskDueDate
-                        }
-                        onChange={(
-                          event
-                        ) =>
-                          setEditingTaskDueDate(
-                            event.target
-                              .value
-                          )
-                        }
-                      />
-                    </div>
+                  <TextField
+                    label="Beschreibung"
+                    value={taskDescription}
+                    onChange={(event) =>
+                      setTaskDescription(
+                        event.target.value
+                      )
+                    }
+                    multiline
+                    minRows={2}
+                    fullWidth
+                  />
 
-                    <div>
-                      <label>
-                        Wiederholungsintervall
-                      </label>
+                  <TextField
+                    label="Fälligkeitsdatum"
+                    type="date"
+                    value={taskDueDate}
+                    onChange={(event) =>
+                      setTaskDueDate(
+                        event.target.value
+                      )
+                    }
+                    fullWidth
+                    slotProps={{
+                      inputLabel: {
+                        shrink: true,
+                      },
+                    }}
+                  />
 
-                      <input
-                        type="number"
-                        min="1"
-                        value={
-                          editingTaskRecurrenceInterval
-                        }
-                        onChange={(
-                          event
-                        ) =>
-                          setEditingTaskRecurrenceInterval(
-                            event.target
-                              .value
-                          )
-                        }
-                      />
-                    </div>
-
-                    <div>
-                      <label>
-                        Einheit
-                      </label>
-
-                      <select
-                        value={
-                          editingTaskRecurrenceUnit
-                        }
-                        onChange={(
-                          event
-                        ) =>
-                          setEditingTaskRecurrenceUnit(
-                            event.target
-                              .value as
-                              | ""
-                              | RecurrenceUnit
-                          )
-                        }
-                      >
-                        <option value="">
-                          Keine Wiederholung
-                        </option>
-
-                        <option value="MONTHS">
-                          Monate
-                        </option>
-
-                        <option value="YEARS">
-                          Jahre
-                        </option>
-                      </select>
-                    </div>
-
-                    <button
-                      type="button"
-                      onClick={() =>
-                        handleUpdateMaintenanceTask(
-                          task.id
+                  <Stack
+                    direction={{
+                      xs: "column",
+                      sm: "row",
+                    }}
+                    spacing={2}
+                  >
+                    <TextField
+                      label="Wiederholungsintervall"
+                      type="number"
+                      value={
+                        taskRecurrenceInterval
+                      }
+                      onChange={(event) =>
+                        setTaskRecurrenceInterval(
+                          event.target.value
                         )
                       }
+                      fullWidth
+                    />
+
+                    <TextField
+                      select
+                      label="Einheit"
+                      value={
+                        taskRecurrenceUnit
+                      }
+                      onChange={(event) =>
+                        setTaskRecurrenceUnit(
+                          event.target
+                            .value as
+                            | ""
+                            | RecurrenceUnit
+                        )
+                      }
+                      fullWidth
                     >
-                      Speichern
-                    </button>
+                      <MenuItem value="">
+                        Keine Wiederholung
+                      </MenuItem>
 
-                    <button
+                      <MenuItem value="MONTHS">
+                        Monate
+                      </MenuItem>
+
+                      <MenuItem value="YEARS">
+                        Jahre
+                      </MenuItem>
+                    </TextField>
+                  </Stack>
+
+                  <Stack
+                    direction="row"
+                    spacing={1}
+                  >
+                    <Button
+                      type="submit"
+                      variant="contained"
+                    >
+                      Wartungsaufgabe anlegen
+                    </Button>
+
+                    <Button
                       type="button"
-                      onClick={() =>
-                        setEditingTaskId(
-                          null
-                        )
-                      }
+                      onClick={() => {
+                        setShowCreateForm(false);
+
+                        setTaskTitle("");
+                        setTaskDescription("");
+                        setTaskDueDate("");
+                        setTaskRecurrenceInterval("");
+                        setTaskRecurrenceUnit("");
+                      }}
                     >
                       Abbrechen
-                    </button>
-                  </>
-                ) : (
-                  <>
-                    <p>
-                      <strong>
-                        {task.title}
-                      </strong>
-                    </p>
+                    </Button>
+                  </Stack>
+                </Stack>
+              </Box>
+            )}
 
-                    <p>
-                      Beschreibung:{" "}
-                      {task.description ||
-                        "-"}
-                    </p>
+            {maintenanceTasks.length ===
+            0 ? (
+              <Alert severity="info">
+                Noch keine Wartungsaufgaben
+                für dieses Objekt vorhanden.
+              </Alert>
+            ) : (
+              <Stack spacing={2}>
+                {maintenanceTasks.map(
+                  (task) => {
+                    const isExpanded =
+                      expandedTaskId ===
+                      task.id;
 
-                    <p>
-                      Fällig am:{" "}
-                      {task.dueDate || "-"}
-                    </p>
+                    const isEditing =
+                      editingTaskId ===
+                      task.id;
 
-                    <p>
-                      Status:{" "}
-                      {task.completed
-                        ? "Erledigt"
-                        : "Offen"}
-                    </p>
+                    const dueStatus =
+                      getDueStatus(
+                        task.dueDate
+                      );
 
-                    <p>
-                      Zuletzt erledigt:{" "}
-                      {task.completedAt ||
-                        "-"}
-                    </p>
-
-                    <p>
-                      Wiederholung:{" "}
-                      {task.recurrenceInterval &&
-                      task.recurrenceUnit
-                        ? `${
-                            task.recurrenceInterval
-                          } ${
-                            task.recurrenceUnit ===
-                            "MONTHS"
-                              ? "Monate"
-                              : "Jahre"
-                          }`
-                        : "Keine"}
-                    </p>
-
-                    <button
-                      type="button"
-                      onClick={() =>
-                        handleEditMaintenanceTask(
-                          task
-                        )
-                      }
-                    >
-                      Bearbeiten
-                    </button>
-
-                    {!task.completed && (
-                      <>
-                        <div>
-                          <label
-                            htmlFor={`completionNote-${task.id}`}
-                          >
-                            Notiz zur Durchführung
-                          </label>
-
-                          <input
-                            id={`completionNote-${task.id}`}
-                            type="text"
-                            value={
-                              completionNotes[
-                                task.id
-                              ] ?? ""
-                            }
-                            onChange={(
-                              event
-                            ) =>
-                              setCompletionNotes(
-                                (
-                                  currentNotes
-                                ) => ({
-                                  ...currentNotes,
-                                  [task.id]:
-                                    event
-                                      .target
-                                      .value,
-                                })
+                    return (
+                      <Card
+                        key={task.id}
+                        variant="outlined"
+                      >
+                        {!isEditing && (
+                          <CardActionArea
+                            onClick={() =>
+                              setExpandedTaskId(
+                                isExpanded
+                                  ? null
+                                  : task.id
                               )
                             }
-                            placeholder="Optional"
-                          />
-                        </div>
+                          >
+                            <CardContent>
+                              <Stack
+                                direction={{
+                                  xs: "column",
+                                  sm: "row",
+                                }}
+                                justifyContent="space-between"
+                                alignItems={{
+                                  xs: "flex-start",
+                                  sm: "center",
+                                }}
+                                spacing={2}
+                              >
+                                <Stack
+                                  direction="row"
+                                  spacing={1.5}
+                                  alignItems="center"
+                                >
+                                  <BuildIcon
+                                    color="action"
+                                  />
 
-                        <button
-                          type="button"
-                          onClick={() =>
-                            handleCompleteMaintenanceTask(
-                              task.id
-                            )
-                          }
-                        >
-                          Erledigt
-                        </button>
-                      </>
-                    )}
+                                  <div>
+                                    <Typography
+                                      variant="h6"
+                                      component="h3"
+                                    >
+                                      {task.title}
+                                    </Typography>
 
-                    <button
-                      type="button"
-                      onClick={() =>
-                        handleLoadHistory(
-                          task.id
-                        )
-                      }
-                    >
-                      {historyTaskId ===
-                      task.id
-                        ? "Historie schließen"
-                        : "Historie anzeigen"}
-                    </button>
+                                    <Typography
+                                      variant="body2"
+                                      color="text.secondary"
+                                    >
+                                      Fällig:{" "}
+                                      {task.dueDate ||
+                                        "Kein Termin"}
+                                    </Typography>
+                                  </div>
+                                </Stack>
 
-                    {historyTaskId ===
-                      task.id && (
-                      <div>
-                        <h4>
-                          Historie
-                        </h4>
+                                <Stack
+                                  direction="row"
+                                  spacing={1}
+                                  alignItems="center"
+                                >
+                                  <Chip
+                                    label={
+                                      dueStatus
+                                    }
+                                    color={getDueStatusColor(
+                                      dueStatus
+                                    )}
+                                    size="small"
+                                  />
 
-                        {historyLoading ? (
-                          <p>
-                            Historie wird
-                            geladen...
-                          </p>
-                        ) : history.length ===
-                          0 ? (
-                          <p>
-                            Noch keine
-                            durchgeführten
-                            Arbeiten vorhanden.
-                          </p>
-                        ) : (
-                          <ul>
-                            {history.map(
-                              (record) => (
-                                <li
-                                  key={
-                                    record.id
+                                  <ExpandMoreIcon
+                                    sx={{
+                                      transform:
+                                        isExpanded
+                                          ? "rotate(180deg)"
+                                          : "rotate(0deg)",
+                                      transition:
+                                        "transform 0.2s",
+                                    }}
+                                  />
+                                </Stack>
+                              </Stack>
+                            </CardContent>
+                          </CardActionArea>
+                        )}
+
+                        {isEditing && (
+                          <CardContent>
+                            <Stack spacing={2}>
+                              <Typography
+                                variant="h6"
+                                component="h3"
+                              >
+                                Wartungsaufgabe
+                                bearbeiten
+                              </Typography>
+
+                              <TextField
+                                label="Titel"
+                                value={
+                                  editingTaskTitle
+                                }
+                                onChange={(event) =>
+                                  setEditingTaskTitle(
+                                    event.target
+                                      .value
+                                  )
+                                }
+                                required
+                                fullWidth
+                              />
+
+                              <TextField
+                                label="Beschreibung"
+                                value={
+                                  editingTaskDescription
+                                }
+                                onChange={(event) =>
+                                  setEditingTaskDescription(
+                                    event.target
+                                      .value
+                                  )
+                                }
+                                multiline
+                                minRows={2}
+                                fullWidth
+                              />
+
+                              <TextField
+                                label="Fälligkeitsdatum"
+                                type="date"
+                                value={
+                                  editingTaskDueDate
+                                }
+                                onChange={(event) =>
+                                  setEditingTaskDueDate(
+                                    event.target
+                                      .value
+                                  )
+                                }
+                                fullWidth
+                                slotProps={{
+                                  inputLabel: {
+                                    shrink: true,
+                                  },
+                                }}
+                              />
+
+                              <Stack
+                                direction={{
+                                  xs: "column",
+                                  sm: "row",
+                                }}
+                                spacing={2}
+                              >
+                                <TextField
+                                  label="Wiederholungsintervall"
+                                  type="number"
+                                  value={
+                                    editingTaskRecurrenceInterval
+                                  }
+                                  onChange={(event) =>
+                                    setEditingTaskRecurrenceInterval(
+                                      event
+                                        .target
+                                        .value
+                                    )
+                                  }
+                                  fullWidth
+                                />
+
+                                <TextField
+                                  select
+                                  label="Einheit"
+                                  value={
+                                    editingTaskRecurrenceUnit
+                                  }
+                                  onChange={(event) =>
+                                    setEditingTaskRecurrenceUnit(
+                                      event
+                                        .target
+                                        .value as
+                                        | ""
+                                        | RecurrenceUnit
+                                    )
+                                  }
+                                  fullWidth
+                                >
+                                  <MenuItem value="">
+                                    Keine
+                                    Wiederholung
+                                  </MenuItem>
+
+                                  <MenuItem value="MONTHS">
+                                    Monate
+                                  </MenuItem>
+
+                                  <MenuItem value="YEARS">
+                                    Jahre
+                                  </MenuItem>
+                                </TextField>
+                              </Stack>
+
+                              <Stack
+                                direction="row"
+                                spacing={1}
+                              >
+                                <Button
+                                  variant="contained"
+                                  onClick={() =>
+                                    handleUpdateMaintenanceTask(
+                                      task.id
+                                    )
                                   }
                                 >
-                                  <p>
-                                    Durchgeführt
-                                    am:{" "}
-                                    {
-                                      record.completedAt
-                                    }
-                                  </p>
+                                  Speichern
+                                </Button>
 
-                                  <p>
-                                    Notiz:{" "}
-                                    {record.note ||
-                                      "-"}
-                                  </p>
-                                </li>
-                              )
-                            )}
-                          </ul>
+                                <Button
+                                  onClick={
+                                    handleCancelEdit
+                                  }
+                                >
+                                  Abbrechen
+                                </Button>
+                              </Stack>
+                            </Stack>
+                          </CardContent>
                         )}
-                      </div>
-                    )}
-                  </>
+
+                        {!isEditing && (
+                          <Collapse
+                            in={isExpanded}
+                            timeout="auto"
+                            unmountOnExit
+                          >
+                            <Divider />
+
+                            <CardContent>
+                              <Stack spacing={2}>
+                                <Typography variant="body2">
+                                  <strong>
+                                    Beschreibung:
+                                  </strong>{" "}
+                                  {task.description ||
+                                    "Keine Beschreibung hinterlegt"}
+                                </Typography>
+
+                                <Typography variant="body2">
+                                  <strong>
+                                    Wiederholung:
+                                  </strong>{" "}
+                                  {task.recurrenceInterval &&
+                                  task.recurrenceUnit
+                                    ? `${
+                                        task.recurrenceInterval
+                                      } ${
+                                        task.recurrenceUnit ===
+                                        "MONTHS"
+                                          ? "Monate"
+                                          : "Jahre"
+                                      }`
+                                    : "Keine"}
+                                </Typography>
+
+                                <Typography variant="body2">
+                                  <strong>
+                                    Zuletzt erledigt:
+                                  </strong>{" "}
+                                  {task.completedAt ||
+                                    "-"}
+                                </Typography>
+
+                                {!task.completed && (
+                                  <TextField
+                                    label="Notiz zur Durchführung"
+                                    value={
+                                      completionNotes[
+                                        task.id
+                                      ] ?? ""
+                                    }
+                                    onChange={(event) =>
+                                      setCompletionNotes(
+                                        (
+                                          currentNotes
+                                        ) => ({
+                                          ...currentNotes,
+                                          [task.id]:
+                                            event
+                                              .target
+                                              .value,
+                                        })
+                                      )
+                                    }
+                                    placeholder="Optional"
+                                    multiline
+                                    minRows={2}
+                                    fullWidth
+                                  />
+                                )}
+
+                                {historyTaskId ===
+                                  task.id && (
+                                  <Box
+                                    sx={{
+                                      p: 2,
+                                      bgcolor:
+                                        "action.hover",
+                                      borderRadius: 1,
+                                    }}
+                                  >
+                                    <Typography
+                                      variant="h6"
+                                      component="h4"
+                                      gutterBottom
+                                    >
+                                      Historie
+                                    </Typography>
+
+                                    {historyLoading ? (
+                                      <Typography>
+                                        Historie wird
+                                        geladen...
+                                      </Typography>
+                                    ) : history.length ===
+                                      0 ? (
+                                      <Typography
+                                        variant="body2"
+                                        color="text.secondary"
+                                      >
+                                        Noch keine
+                                        durchgeführten
+                                        Arbeiten
+                                        vorhanden.
+                                      </Typography>
+                                    ) : (
+                                      <Stack
+                                        spacing={2}
+                                      >
+                                        {history.map(
+                                          (
+                                            record
+                                          ) => (
+                                            <Box
+                                              key={
+                                                record.id
+                                              }
+                                            >
+                                              <Typography variant="body2">
+                                                <strong>
+                                                  Durchgeführt
+                                                  am:
+                                                </strong>{" "}
+                                                {
+                                                  record.completedAt
+                                                }
+                                              </Typography>
+
+                                              <Typography variant="body2">
+                                                <strong>
+                                                  Notiz:
+                                                </strong>{" "}
+                                                {record.note ||
+                                                  "-"}
+                                              </Typography>
+
+                                              <Divider
+                                                sx={{
+                                                  mt: 2,
+                                                }}
+                                              />
+                                            </Box>
+                                          )
+                                        )}
+                                      </Stack>
+                                    )}
+                                  </Box>
+                                )}
+                              </Stack>
+                            </CardContent>
+
+                            <CardActions
+                              sx={{
+                                px: 2,
+                                pb: 2,
+                                flexWrap:
+                                  "wrap",
+                                gap: 1,
+                              }}
+                            >
+                              <Button
+                                startIcon={
+                                  <EditIcon />
+                                }
+                                onClick={() =>
+                                  handleEditMaintenanceTask(
+                                    task
+                                  )
+                                }
+                              >
+                                Bearbeiten
+                              </Button>
+
+                              {!task.completed && (
+                                <Button
+                                  variant="contained"
+                                  color="success"
+                                  startIcon={
+                                    <CheckCircleIcon />
+                                  }
+                                  onClick={() =>
+                                    handleCompleteMaintenanceTask(
+                                      task.id
+                                    )
+                                  }
+                                >
+                                  Erledigt
+                                </Button>
+                              )}
+
+                              <Button
+                                variant="outlined"
+                                startIcon={
+                                  <HistoryIcon />
+                                }
+                                onClick={() =>
+                                  handleLoadHistory(
+                                    task.id
+                                  )
+                                }
+                              >
+                                {historyTaskId ===
+                                task.id
+                                  ? "Historie schließen"
+                                  : "Historie anzeigen"}
+                              </Button>
+                            </CardActions>
+                          </Collapse>
+                        )}
+                      </Card>
+                    );
+                  }
                 )}
-              </li>
-            )
-          )}
-        </ul>
-      )}
-
-      <h3>
-        Neue Wartungsaufgabe
-      </h3>
-
-      <form
-        onSubmit={
-          handleCreateMaintenanceTask
-        }
-      >
-        <div>
-          <label htmlFor="taskTitle">
-            Titel
-          </label>
-
-          <input
-            id="taskTitle"
-            type="text"
-            value={taskTitle}
-            onChange={(event) =>
-              setTaskTitle(
-                event.target.value
-              )
-            }
-            required
-          />
-        </div>
-
-        <div>
-          <label htmlFor="taskDescription">
-            Beschreibung
-          </label>
-
-          <input
-            id="taskDescription"
-            type="text"
-            value={taskDescription}
-            onChange={(event) =>
-              setTaskDescription(
-                event.target.value
-              )
-            }
-          />
-        </div>
-
-        <div>
-          <label htmlFor="taskDueDate">
-            Fälligkeitsdatum
-          </label>
-
-          <input
-            id="taskDueDate"
-            type="date"
-            value={taskDueDate}
-            onChange={(event) =>
-              setTaskDueDate(
-                event.target.value
-              )
-            }
-          />
-        </div>
-
-        <div>
-          <label htmlFor="taskRecurrenceInterval">
-            Wiederholungsintervall
-          </label>
-
-          <input
-            id="taskRecurrenceInterval"
-            type="number"
-            min="1"
-            value={
-              taskRecurrenceInterval
-            }
-            onChange={(event) =>
-              setTaskRecurrenceInterval(
-                event.target.value
-              )
-            }
-          />
-        </div>
-
-        <div>
-          <label htmlFor="taskRecurrenceUnit">
-            Einheit
-          </label>
-
-          <select
-            id="taskRecurrenceUnit"
-            value={taskRecurrenceUnit}
-            onChange={(event) =>
-              setTaskRecurrenceUnit(
-                event.target.value as
-                  | ""
-                  | RecurrenceUnit
-              )
-            }
-          >
-            <option value="">
-              Keine Wiederholung
-            </option>
-
-            <option value="MONTHS">
-              Monate
-            </option>
-
-            <option value="YEARS">
-              Jahre
-            </option>
-          </select>
-        </div>
-
-        <button type="submit">
-          Wartungsaufgabe anlegen
-        </button>
-      </form>
-    </section>
+              </Stack>
+            )}
+          </>
+        )}
+      </Stack>
+    </Paper>
   );
 }
 
