@@ -75,4 +75,17 @@ public class PropertyController {
 
         return ResponseEntity.ok(properties);
     }
+
+    @DeleteMapping("/{propertyId}")
+    public ResponseEntity<Void> deleteProperty(
+            @PathVariable Long propertyId,
+            Authentication authentication
+    ) {
+        propertyService.deleteProperty(
+                propertyId,
+                authentication.getName()
+        );
+
+        return ResponseEntity.noContent().build();
+    }
 }

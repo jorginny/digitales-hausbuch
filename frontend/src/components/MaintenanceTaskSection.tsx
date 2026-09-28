@@ -24,6 +24,7 @@ import CheckCircleIcon from "@mui/icons-material/CheckCircle";
 import EditIcon from "@mui/icons-material/Edit";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import HistoryIcon from "@mui/icons-material/History";
+import DeleteIcon from "@mui/icons-material/Delete";
 
 import {
   completeMaintenanceTask,
@@ -31,6 +32,7 @@ import {
   getMaintenanceHistory,
   getMaintenanceTasks,
   updateMaintenanceTask,
+  deleteMaintenanceTask,
   type MaintenanceRecordResponse,
   type MaintenanceTaskResponse,
   type RecurrenceUnit,
@@ -530,6 +532,51 @@ function MaintenanceTaskSection({
       }
     };
 
+const handleDeleteMaintenanceTask = async (
+  taskId: number) => {
+    if (
+        selectedRoomId === null ||
+        selectedObjectId === null
+        ) {
+            return;
+        }
+
+        const confirmed = window.confirm(
+            "Möchtest du diese Wartungsaufgabe wirklich löschen?"
+        );
+
+        if (!confirmed) {
+            return;
+        }
+
+    try {
+        await deleteMaintenanceTask(
+        propertyId,
+        selectedRoomId,
+        selectedObjectId,
+        taskId
+        );
+
+    setMaintenanceTasks((currentTasks) =>
+      currentTasks.filter(
+        (task) => task.id !== taskId
+      )
+    );
+
+    setExpandedTaskId(null);
+    setHistoryTaskId(null);
+    setHistory([]);
+
+    setMessage(
+      "Wartungsaufgabe wurde erfolgreich gelöscht."
+    );
+  } catch (error) {
+    if (error instanceof Error) {
+      setError(error.message);
+    }
+  }
+};
+
   return (
     <Paper elevation={2} sx={{ p: 3 }}>
       <Stack spacing={3}>
@@ -538,13 +585,15 @@ function MaintenanceTaskSection({
             xs: "column",
             sm: "row",
           }}
-          justifyContent="space-between"
-          alignItems={{
-            xs: "flex-start",
-            sm: "center",
-          }}
           spacing={2}
-        >
+            sx={{
+                justifyContent: "space-between",
+                alignItems: {
+                xs: "flex-start",
+                sm: "center",
+                },
+            }}
+            >
           <div>
             <Typography
               variant="h5"
@@ -785,17 +834,21 @@ function MaintenanceTaskSection({
                                   xs: "column",
                                   sm: "row",
                                 }}
-                                justifyContent="space-between"
-                                alignItems={{
-                                  xs: "flex-start",
-                                  sm: "center",
+                                sx={{
+                                justifyContent: "space-between",
+                                alignItems: {
+                                    xs: "flex-start",
+                                    sm: "center"}
                                 }}
                                 spacing={2}
                               >
                                 <Stack
                                   direction="row"
                                   spacing={1.5}
-                                  alignItems="center"
+                                  sx={{
+                                    alignItems: "center",
+                                }}
+                                    
                                 >
                                   <BuildIcon
                                     color="action"
@@ -823,7 +876,10 @@ function MaintenanceTaskSection({
                                 <Stack
                                   direction="row"
                                   spacing={1}
-                                  alignItems="center"
+                                  sx={{
+                                    alignItems: "center"
+                                }}
+                                  
                                 >
                                   <Chip
                                     label={
@@ -1201,6 +1257,16 @@ function MaintenanceTaskSection({
                                   ? "Historie schließen"
                                   : "Historie anzeigen"}
                               </Button>
+
+                              <Button
+                                color="error"
+                                startIcon={<DeleteIcon />}
+                                onClick={() =>
+                                    handleDeleteMaintenanceTask(task.id)
+                                }
+                                >
+                                Löschen
+                            </Button>
                             </CardActions>
                           </Collapse>
                         )}

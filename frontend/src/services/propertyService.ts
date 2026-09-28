@@ -88,3 +88,21 @@ export async function getProperties(): Promise<PropertyResponse[]> {
 
   return response.json();
 }
+
+export async function deleteProperty(
+  propertyId: number
+): Promise<void> {
+  const response = await fetch(
+    `http://localhost:8080/api/properties/${propertyId}`,
+    {
+      method: "DELETE",
+      credentials: "include",
+    }
+  );
+
+  if (!response.ok) {
+    throw new Error(
+      "Immobilie konnte nicht gelöscht werden."
+    );
+  }
+}

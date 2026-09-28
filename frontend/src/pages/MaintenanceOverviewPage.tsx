@@ -1,5 +1,21 @@
 import { useEffect, useState } from "react";
-import { useParams } from "react-router";
+import { Link, useParams } from "react-router";
+
+import {
+  Alert,
+  Box,
+  Button,
+  Card,
+  CardContent,
+  Chip,
+  CircularProgress,
+  Divider,
+  Stack,
+  Typography,
+} from "@mui/material";
+
+import ArrowBackIcon from "@mui/icons-material/ArrowBack";
+import BuildIcon from "@mui/icons-material/Build";
 
 import {
   getMaintenanceOverview,
@@ -41,6 +57,28 @@ function getDueStatus(
   }
 
   return "Später";
+}
+
+function getStatusColor(
+  status: DueStatus
+):
+  | "error"
+  | "warning"
+  | "success"
+  | "default" {
+  switch (status) {
+    case "Überfällig":
+      return "error";
+
+    case "Bald fällig":
+      return "warning";
+
+    case "Später":
+      return "success";
+
+    case "Kein Termin":
+      return "default";
+  }
 }
 
 function MaintenanceOverviewPage() {
@@ -92,81 +130,192 @@ function MaintenanceOverviewPage() {
 
   if (loading) {
     return (
-      <p>
-        Wartungsaufgaben werden geladen...
-      </p>
-    );
-  }
+    <Box>
+        <Stack spacing={4}>
+        <Stack
+            direction={{
+            xs: "column",
+            sm: "row",
+            }}
+            spacing={2}
+            sx={{
+            justifyContent: "space-between",
+            alignItems: {
+                xs: "flex-start",
+                sm: "center",
+            },
+            }}
+        >
+            <div>
+            <Typography
+                variant="h4"
+                component="h1"
+                gutterBottom
+            >
+                Wartungsübersicht
+            </Typography>
 
-  return (
-    <div>
-      <h1>Wartungsübersicht</h1>
+            <Typography
+                variant="body1"
+                color="text.secondary"
+            >
+                Alle offenen Wartungsaufgaben
+                der Immobilie auf einen Blick.
+            </Typography>
+            </div>
 
-      {error && <p>{error}</p>}
+            {id && (
+            <Button
+                component={Link}
+                to={`/properties/${id}`}
+                variant="outlined"
+                startIcon={<ArrowBackIcon />}
+            >
+                Zur Immobilie
+            </Button>
+            )}
+        </Stack>
 
-      {!error && tasks.length === 0 && (
-        <p>
-          Aktuell sind keine offenen
-          Wartungsaufgaben vorhanden.
-        </p>
+        {error && (
+            <Alert severity="error">
+            {error}
+            </Alert>
+        )}
+
+        {!error && tasks.length === 0 && (
+            <Alert severity="success">
+            Aktuell sind keine offenen
+            Wartungsaufgaben vorhanden.
+            </Alert>
+        )}
+
+        {tasks.length > 0 && (
+            <Stack spacing={2}>
+            {tasks.map((task) => {
+                const dueStatus =
+                getDueStatus(task.dueDate);
+
+                return (
+                <Card
+                    key={task.taskId}
+                    variant="outlined"
+                >
+                    <CardContent>
+                  <Stack spacing={2}>
+                    <Stack
+                      direction={{
+                        xs: "column",
+                        sm: "row",
+                      }}
+                      spacing={1}
+                      sx={{
+                        justifyContent:
+                          "space-between",
+                        alignItems: {
+                          xs: "flex-start",
+                          sm: "center",
+                        },
+                      }}
+                    >
+                      <Stack
+                        direction="row"
+                        spacing={1}
+                        sx={{
+                          alignItems: "center",
+                        }}
+                      >
+                        <BuildIcon
+                          color="action"
+                        />
+
+                        <Typography
+                          variant="h6"
+                          component="h2"
+                        >
+                          {task.title}
+                        </Typography>
+                      </Stack>
+
+                      <Chip
+                        label={dueStatus}
+                        color={getStatusColor(
+                          dueStatus
+                        )}
+                        size="small"
+                      />
+                    </Stack>
+
+                    <Divider />
+
+                    <Box
+                      sx={{
+                        display: "grid",
+                        gridTemplateColumns: {
+                          xs: "1fr",
+                          sm: "repeat(2, 1fr)",
+                        },
+                        gap: 1.5,
+                      }}
+                    >
+                      <Typography variant="body2">
+                        <strong>Raum:</strong>{" "}
+                        {task.roomName}
+                      </Typography>
+
+                      <Typography variant="body2">
+                        <strong>Objekt:</strong>{" "}
+                        {task.objectName}
+                      </Typography>
+
+                      <Typography variant="body2">
+                        <strong>Fällig am:</strong>{" "}
+                        {task.dueDate ||
+                          "Kein Termin"}
+                      </Typography>
+
+                      <Typography variant="body2">
+                        <strong>
+                          Zuletzt erledigt:
+                        </strong>{" "}
+                        {task.completedAt || "-"}
+                      </Typography>
+                    </Box>
+
+                    <Typography variant="body2">
+                      <strong>
+                        Beschreibung:
+                      </strong>{" "}
+                      {task.description || "-"}
+                    </Typography>
+
+                    <Typography variant="body2">
+                      <strong>
+                        Wiederholung:
+                      </strong>{" "}
+                      {task.recurrenceInterval &&
+                      task.recurrenceUnit
+                        ? `${
+                            task.recurrenceInterval
+                          } ${
+                            task.recurrenceUnit ===
+                            "MONTHS"
+                              ? "Monate"
+                              : "Jahre"
+                          }`
+                        : "Keine"}
+                    </Typography>
+                  </Stack>
+                </CardContent>
+              </Card>
+            );
+          })}
+        </Stack>
       )}
+    </Stack>
+  </Box>
+);
+  }}
 
-      {tasks.length > 0 && (
-        <ul>
-          {tasks.map((task) => (
-            <li key={task.taskId}>
-              <h3>{task.title}</h3>
-
-              <p>
-                Status:{" "}
-                {getDueStatus(
-                  task.dueDate
-                )}
-              </p>
-
-              <p>
-                Raum: {task.roomName}
-              </p>
-
-              <p>
-                Objekt: {task.objectName}
-              </p>
-
-              <p>
-                Beschreibung:{" "}
-                {task.description || "-"}
-              </p>
-
-              <p>
-                Fällig am:{" "}
-                {task.dueDate || "-"}
-              </p>
-
-              <p>
-                Zuletzt erledigt:{" "}
-                {task.completedAt || "-"}
-              </p>
-
-              <p>
-                Wiederholung:{" "}
-                {task.recurrenceInterval &&
-                task.recurrenceUnit
-                  ? `${
-                      task.recurrenceInterval
-                    } ${
-                      task.recurrenceUnit ===
-                      "MONTHS"
-                        ? "Monate"
-                        : "Jahre"
-                    }`
-                  : "Keine"}
-              </p>
-            </li>
-          ))}
-        </ul>
-      )}
-    </div>
-  );
-}
+  
 
 export default MaintenanceOverviewPage;

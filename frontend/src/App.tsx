@@ -8,6 +8,9 @@ import CreatePropertyPage from "./pages/CreatePropertyPage";
 import PropertyDetailPage from "./pages/PropertyDetailPage";
 import PropertyListPage from "./pages/PropertyListPage";
 import MaintenanceOverviewPage from "./pages/MaintenanceOverviewPage";
+import AppLayout from "./components/AppLayout";
+
+
 
 
 function App() {
@@ -19,50 +22,53 @@ function App() {
 
       <Route path="/login" element={<LoginPage />} />
 
-      <Route
-        path="/dashboard"
-        element={
-          <ProtectedRoute>
-            <DashboardPage />
-          </ProtectedRoute>
-        }
-        />
-
-      <Route
-        path="/properties/new"
-        element={
-          <ProtectedRoute>
-            <CreatePropertyPage />
-          </ProtectedRoute>     
-        }
-        />
+      <Route element={<AppLayout />}>
 
         <Route
-          path="/properties/:id"
-          element={
-          <ProtectedRoute>
-            <PropertyDetailPage />
-          </ProtectedRoute>
-        }
-        />
-
-        <Route
-          path="/properties"
+          path="/dashboard"
           element={
             <ProtectedRoute>
-              <PropertyListPage />
+              <DashboardPage />
             </ProtectedRoute>
           }
-        />
+          />
 
         <Route
-          path="/properties/:id/maintenance"
+          path="/properties/new"
           element={
             <ProtectedRoute>
-              <MaintenanceOverviewPage />
+              <CreatePropertyPage />
+            </ProtectedRoute>     
+          }
+          />
+
+          <Route
+            path="/properties/:id"
+            element={
+            <ProtectedRoute>
+              <PropertyDetailPage />
             </ProtectedRoute>
           }
-        />
+          />
+
+          <Route
+            path="/properties"
+            element={
+              <ProtectedRoute>
+                <PropertyListPage />
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/properties/:id/maintenance"
+            element={
+              <ProtectedRoute>
+                <MaintenanceOverviewPage />
+              </ProtectedRoute>
+            }
+          />
+      </Route>
 
     </Routes>
   );

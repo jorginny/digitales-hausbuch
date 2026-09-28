@@ -1,6 +1,27 @@
 import { useEffect, useState } from "react";
 
 import {
+  Alert,
+  Box,
+  Button,
+  Card,
+  CardActionArea,
+  CardActions,
+  CardContent,
+  Chip,
+  Divider,
+  Paper,
+  Stack,
+  TextField,
+  Typography,
+} from "@mui/material";
+
+import AddIcon from "@mui/icons-material/Add";
+import CheckCircleIcon from "@mui/icons-material/CheckCircle";
+import EditIcon from "@mui/icons-material/Edit";
+import DeleteIcon from "@mui/icons-material/Delete";
+
+import {
   createHouseholdObject,
   deleteHouseholdObject,
   getHouseholdObjects,
@@ -24,22 +45,18 @@ function HouseholdObjectSection({
   const [householdObjects, setHouseholdObjects] =
     useState<HouseholdObjectResponse[]>([]);
 
-  const [objectName, setObjectName] =
-    useState("");
+  const [showCreateForm, setShowCreateForm] =
+    useState(false);
 
+  const [objectName, setObjectName] = useState("");
   const [objectDescription, setObjectDescription] =
     useState("");
-
   const [objectManufacturer, setObjectManufacturer] =
     useState("");
-
-  const [objectModel, setObjectModel] =
-    useState("");
-
+  const [objectModel, setObjectModel] = useState("");
   const [objectPurchaseDate, setObjectPurchaseDate] =
     useState("");
 
-  // Bearbeitung
   const [editingObjectId, setEditingObjectId] =
     useState<number | null>(null);
 
@@ -56,31 +73,30 @@ function HouseholdObjectSection({
     setEditingObjectManufacturer,
   ] = useState("");
 
-  const [
-    editingObjectModel,
-    setEditingObjectModel,
-  ] = useState("");
+  const [editingObjectModel, setEditingObjectModel] =
+    useState("");
 
   const [
     editingObjectPurchaseDate,
     setEditingObjectPurchaseDate,
   ] = useState("");
 
-  const [message, setMessage] =
-    useState("");
-
-  const [error, setError] =
-    useState("");
+  const [message, setMessage] = useState("");
+  const [error, setError] = useState("");
 
   useEffect(() => {
+    setMessage("");
+    setError("");
+
     if (selectedRoomId === null) {
       setHouseholdObjects([]);
+      setShowCreateForm(false);
+      setEditingObjectId(null);
+      onSelectObject(null);
       return;
     }
 
     const loadHouseholdObjects = async () => {
-      setError("");
-
       try {
         const loadedObjects =
           await getHouseholdObjects(
@@ -88,9 +104,7 @@ function HouseholdObjectSection({
             selectedRoomId
           );
 
-        setHouseholdObjects(
-          loadedObjects
-        );
+        setHouseholdObjects(loadedObjects);
       } catch (error) {
         if (error instanceof Error) {
           setError(error.message);
@@ -99,7 +113,7 @@ function HouseholdObjectSection({
     };
 
     loadHouseholdObjects();
-  }, [propertyId, selectedRoomId]);
+  }, [propertyId, selectedRoomId, onSelectObject]);
 
   const handleCreateHouseholdObject = async (
     event: React.SubmitEvent<HTMLFormElement>
@@ -107,9 +121,6 @@ function HouseholdObjectSection({
     event.preventDefault();
 
     if (selectedRoomId === null) {
-      setError(
-        "Bitte zuerst einen Raum auswählen."
-      );
       return;
     }
 
@@ -123,30 +134,26 @@ function HouseholdObjectSection({
           selectedRoomId,
           {
             name: objectName,
-            description:
-              objectDescription,
-            manufacturer:
-              objectManufacturer,
-            model:
-              objectModel,
+            description: objectDescription,
+            manufacturer: objectManufacturer,
+            model: objectModel,
             purchaseDate:
-              objectPurchaseDate ||
-              undefined,
+              objectPurchaseDate || undefined,
           }
         );
 
-      setHouseholdObjects(
-        (currentObjects) => [
-          ...currentObjects,
-          createdObject,
-        ]
-      );
+      setHouseholdObjects((currentObjects) => [
+        ...currentObjects,
+        createdObject,
+      ]);
 
       setObjectName("");
       setObjectDescription("");
       setObjectManufacturer("");
       setObjectModel("");
       setObjectPurchaseDate("");
+
+      setShowCreateForm(false);
 
       setMessage(
         "Objekt wurde erfolgreich angelegt."
@@ -161,29 +168,27 @@ function HouseholdObjectSection({
   const handleEditHouseholdObject = (
     householdObject: HouseholdObjectResponse
   ) => {
-    setEditingObjectId(
-      householdObject.id
-    );
-
-    setEditingObjectName(
-      householdObject.name
-    );
-
+    setEditingObjectId(householdObject.id);
+    setEditingObjectName(householdObject.name);
     setEditingObjectDescription(
       householdObject.description ?? ""
     );
-
     setEditingObjectManufacturer(
       householdObject.manufacturer ?? ""
     );
-
     setEditingObjectModel(
       householdObject.model ?? ""
     );
-
     setEditingObjectPurchaseDate(
       householdObject.purchaseDate ?? ""
     );
+
+    setMessage("");
+    setError("");
+  };
+
+  const handleCancelEdit = () => {
+    setEditingObjectId(null);
   };
 
   const handleUpdateHouseholdObject =
@@ -202,42 +207,27 @@ function HouseholdObjectSection({
             selectedRoomId,
             objectId,
             {
-              name:
-                editingObjectName,
-
+              name: editingObjectName,
               description:
                 editingObjectDescription,
-
               manufacturer:
                 editingObjectManufacturer,
-
-              model:
-                editingObjectModel,
-
+              model: editingObjectModel,
               purchaseDate:
                 editingObjectPurchaseDate ||
                 undefined,
             }
           );
 
-        setHouseholdObjects(
-          (currentObjects) =>
-            currentObjects.map(
-              (householdObject) =>
-                householdObject.id ===
-                objectId
-                  ? updatedObject
-                  : householdObject
-            )
+        setHouseholdObjects((currentObjects) =>
+          currentObjects.map((householdObject) =>
+            householdObject.id === objectId
+              ? updatedObject
+              : householdObject
+          )
         );
 
         setEditingObjectId(null);
-
-        setEditingObjectName("");
-        setEditingObjectDescription("");
-        setEditingObjectManufacturer("");
-        setEditingObjectModel("");
-        setEditingObjectPurchaseDate("");
 
         setMessage(
           "Objekt wurde erfolgreich aktualisiert."
@@ -255,10 +245,9 @@ function HouseholdObjectSection({
         return;
       }
 
-      const confirmed =
-        window.confirm(
-          "Möchtest du dieses Objekt wirklich löschen?"
-        );
+      const confirmed = window.confirm(
+        "Möchtest du dieses Objekt wirklich löschen?"
+      );
 
       if (!confirmed) {
         return;
@@ -274,19 +263,14 @@ function HouseholdObjectSection({
           objectId
         );
 
-        setHouseholdObjects(
-          (currentObjects) =>
-            currentObjects.filter(
-              (householdObject) =>
-                householdObject.id !==
-                objectId
-            )
+        setHouseholdObjects((currentObjects) =>
+          currentObjects.filter(
+            (householdObject) =>
+              householdObject.id !== objectId
+          )
         );
 
-        if (
-          selectedObjectId ===
-          objectId
-        ) {
+        if (selectedObjectId === objectId) {
           onSelectObject(null);
         }
 
@@ -300,375 +284,450 @@ function HouseholdObjectSection({
       }
     };
 
-  if (selectedRoomId === null) {
-    return (
-      <section>
-        <h2>Objekte</h2>
-
-        <p>
-          Bitte zuerst einen Raum
-          auswählen.
-        </p>
-      </section>
-    );
-  }
-
   return (
-    <section>
-      <h2>Objekte</h2>
+    <Paper elevation={2} sx={{ p: 3 }}>
+      <Stack spacing={3}>
+        <Stack
+          direction={{
+            xs: "column",
+            sm: "row",
+          }}
+          sx={{
+          justifyContent: "space-between",
+          alignItems: {
+            xs: "flex-start",
+            sm: "center"
+        }
+          }}
+          spacing={2}
+        >
+          <div>
+            <Typography
+              variant="h5"
+              component="h2"
+              gutterBottom
+            >
+              Objekte
+            </Typography>
 
-      {error && <p>{error}</p>}
-      {message && <p>{message}</p>}
+            <Typography
+              variant="body2"
+              color="text.secondary"
+            >
+              Wähle ein Objekt aus, um dessen
+              Wartungsaufgaben zu verwalten.
+            </Typography>
+          </div>
 
-      {householdObjects.length === 0 ? (
-        <p>
-          Noch keine Objekte in diesem
-          Raum vorhanden.
-        </p>
-      ) : (
-        <>
-          <h3>Vorhandene Objekte</h3>
+          {selectedRoomId !== null &&
+            !showCreateForm && (
+              <Button
+                variant="contained"
+                startIcon={<AddIcon />}
+                onClick={() => {
+                  setShowCreateForm(true);
+                  setMessage("");
+                  setError("");
+                }}
+              >
+                Neues Objekt
+              </Button>
+            )}
+        </Stack>
 
-          {householdObjects.map(
-            (householdObject) => (
-              <div
-                key={
-                  householdObject.id
+        {error && (
+          <Alert severity="error">
+            {error}
+          </Alert>
+        )}
+
+        {message && (
+          <Alert severity="success">
+            {message}
+          </Alert>
+        )}
+
+        {selectedRoomId === null ? (
+          <Alert severity="info">
+            Bitte zuerst einen Raum auswählen.
+          </Alert>
+        ) : (
+          <>
+            {showCreateForm && (
+              <Box
+                component="form"
+                onSubmit={
+                  handleCreateHouseholdObject
                 }
               >
-                {editingObjectId ===
-                householdObject.id ? (
-                  <>
-                    <div>
-                      <label>
-                        Name
-                      </label>
+                <Stack spacing={2}>
+                  <Typography
+                    variant="h6"
+                    component="h3"
+                  >
+                    Neues Objekt anlegen
+                  </Typography>
 
-                      <input
-                        type="text"
-                        value={
-                          editingObjectName
-                        }
-                        onChange={(
-                          event
-                        ) =>
-                          setEditingObjectName(
-                            event.target
-                              .value
-                          )
-                        }
-                      />
-                    </div>
+                  <TextField
+                    label="Name"
+                    value={objectName}
+                    onChange={(event) =>
+                      setObjectName(
+                        event.target.value
+                      )
+                    }
+                    required
+                    fullWidth
+                  />
 
-                    <div>
-                      <label>
-                        Beschreibung
-                      </label>
+                  <TextField
+                    label="Beschreibung"
+                    value={objectDescription}
+                    onChange={(event) =>
+                      setObjectDescription(
+                        event.target.value
+                      )
+                    }
+                    multiline
+                    minRows={2}
+                    fullWidth
+                  />
 
-                      <input
-                        type="text"
-                        value={
-                          editingObjectDescription
-                        }
-                        onChange={(
-                          event
-                        ) =>
-                          setEditingObjectDescription(
-                            event.target
-                              .value
-                          )
-                        }
-                      />
-                    </div>
+                  <TextField
+                    label="Hersteller"
+                    value={objectManufacturer}
+                    onChange={(event) =>
+                      setObjectManufacturer(
+                        event.target.value
+                      )
+                    }
+                    fullWidth
+                  />
 
-                    <div>
-                      <label>
-                        Hersteller
-                      </label>
+                  <TextField
+                    label="Modell"
+                    value={objectModel}
+                    onChange={(event) =>
+                      setObjectModel(
+                        event.target.value
+                      )
+                    }
+                    fullWidth
+                  />
 
-                      <input
-                        type="text"
-                        value={
-                          editingObjectManufacturer
-                        }
-                        onChange={(
-                          event
-                        ) =>
-                          setEditingObjectManufacturer(
-                            event.target
-                              .value
-                          )
-                        }
-                      />
-                    </div>
+                  <TextField
+                    label="Kaufdatum"
+                    type="date"
+                    value={objectPurchaseDate}
+                    onChange={(event) =>
+                      setObjectPurchaseDate(
+                        event.target.value
+                      )
+                    }
+                    fullWidth
+                    slotProps={{
+                      inputLabel: {
+                        shrink: true,
+                      },
+                    }}
+                  />
 
-                    <div>
-                      <label>
-                        Modell
-                      </label>
-
-                      <input
-                        type="text"
-                        value={
-                          editingObjectModel
-                        }
-                        onChange={(
-                          event
-                        ) =>
-                          setEditingObjectModel(
-                            event.target
-                              .value
-                          )
-                        }
-                      />
-                    </div>
-
-                    <div>
-                      <label>
-                        Kaufdatum
-                      </label>
-
-                      <input
-                        type="date"
-                        value={
-                          editingObjectPurchaseDate
-                        }
-                        onChange={(
-                          event
-                        ) =>
-                          setEditingObjectPurchaseDate(
-                            event.target
-                              .value
-                          )
-                        }
-                      />
-                    </div>
-
-                    <button
-                      type="button"
-                      onClick={() =>
-                        handleUpdateHouseholdObject(
-                          householdObject.id
-                        )
-                      }
+                  <Stack
+                    direction="row"
+                    spacing={1}
+                  >
+                    <Button
+                      type="submit"
+                      variant="contained"
                     >
-                      Speichern
-                    </button>
+                      Objekt anlegen
+                    </Button>
 
-                    <button
+                    <Button
                       type="button"
                       onClick={() => {
-                        setEditingObjectId(
-                          null
-                        );
+                        setShowCreateForm(false);
+                        setObjectName("");
+                        setObjectDescription("");
+                        setObjectManufacturer("");
+                        setObjectModel("");
+                        setObjectPurchaseDate("");
                       }}
                     >
                       Abbrechen
-                    </button>
-                  </>
-                ) : (
-                  <>
-                    <p>
-                      <strong>
-                        {
-                          householdObject.name
-                        }
-                      </strong>
-                    </p>
+                    </Button>
+                  </Stack>
+                </Stack>
+              </Box>
+            )}
 
-                    <p>
-                      Beschreibung:{" "}
-                      {householdObject.description ||
-                        "-"}
-                    </p>
+            {householdObjects.length === 0 ? (
+              <Alert severity="info">
+                Noch keine Objekte in diesem
+                Raum vorhanden.
+              </Alert>
+            ) : (
+              <Box
+                sx={{
+                  display: "grid",
+                  gridTemplateColumns: {
+                    xs: "1fr",
+                    md: "repeat(2, 1fr)",
+                  },
+                  gap: 2,
+                }}
+              >
+                {householdObjects.map(
+                  (householdObject) => {
+                    const isSelected =
+                      selectedObjectId ===
+                      householdObject.id;
 
-                    <p>
-                      Hersteller:{" "}
-                      {householdObject.manufacturer ||
-                        "-"}
-                    </p>
+                    const isEditing =
+                      editingObjectId ===
+                      householdObject.id;
 
-                    <p>
-                      Modell:{" "}
-                      {householdObject.model ||
-                        "-"}
-                    </p>
+                    return (
+                      <Card
+                        key={householdObject.id}
+                        variant="outlined"
+                        sx={{
+                          borderWidth: isSelected
+                            ? 2
+                            : 1,
+                          borderColor: isSelected
+                            ? "primary.main"
+                            : "divider",
+                        }}
+                      >
+                        {isEditing ? (
+                          <CardContent>
+                            <Stack spacing={2}>
+                              <TextField
+                                label="Name"
+                                value={
+                                  editingObjectName
+                                }
+                                onChange={(event) =>
+                                  setEditingObjectName(
+                                    event.target
+                                      .value
+                                  )
+                                }
+                                required
+                                fullWidth
+                              />
 
-                    <p>
-                      Kaufdatum:{" "}
-                      {householdObject.purchaseDate ||
-                        "-"}
-                    </p>
+                              <TextField
+                                label="Beschreibung"
+                                value={
+                                  editingObjectDescription
+                                }
+                                onChange={(event) =>
+                                  setEditingObjectDescription(
+                                    event.target
+                                      .value
+                                  )
+                                }
+                                multiline
+                                minRows={2}
+                                fullWidth
+                              />
 
-                    <button
-                      type="button"
-                      onClick={() =>
-                        handleEditHouseholdObject(
-                          householdObject
-                        )
-                      }
-                    >
-                      Bearbeiten
-                    </button>
+                              <TextField
+                                label="Hersteller"
+                                value={
+                                  editingObjectManufacturer
+                                }
+                                onChange={(event) =>
+                                  setEditingObjectManufacturer(
+                                    event.target
+                                      .value
+                                  )
+                                }
+                                fullWidth
+                              />
 
-                    <button
-                      type="button"
-                      onClick={() =>
-                        handleDeleteHouseholdObject(
-                          householdObject.id
-                        )
-                      }
-                    >
-                      Löschen
-                    </button>
-                  </>
+                              <TextField
+                                label="Modell"
+                                value={
+                                  editingObjectModel
+                                }
+                                onChange={(event) =>
+                                  setEditingObjectModel(
+                                    event.target
+                                      .value
+                                  )
+                                }
+                                fullWidth
+                              />
+
+                              <TextField
+                                label="Kaufdatum"
+                                type="date"
+                                value={
+                                  editingObjectPurchaseDate
+                                }
+                                onChange={(event) =>
+                                  setEditingObjectPurchaseDate(
+                                    event.target
+                                      .value
+                                  )
+                                }
+                                fullWidth
+                                slotProps={{
+                                  inputLabel: {
+                                    shrink: true,
+                                  },
+                                }}
+                              />
+
+                              <Stack
+                                direction="row"
+                                spacing={1}
+                              >
+                                <Button
+                                  variant="contained"
+                                  onClick={() =>
+                                    handleUpdateHouseholdObject(
+                                      householdObject.id
+                                    )
+                                  }
+                                >
+                                  Speichern
+                                </Button>
+
+                                <Button
+                                  onClick={
+                                    handleCancelEdit
+                                  }
+                                >
+                                  Abbrechen
+                                </Button>
+                              </Stack>
+                            </Stack>
+                          </CardContent>
+                        ) : (
+                          <>
+                            <CardActionArea
+                              onClick={() =>
+                                onSelectObject(
+                                  isSelected
+                                    ? null
+                                    : householdObject.id
+                                )
+                              }
+                            >
+                              <CardContent>
+                                <Stack spacing={1.5}>
+                                  <Stack
+                                    direction="row"
+                                    sx={{
+                                    justifyContent: "space-between",
+                                    alignItems: "flex-start"
+                                    }}
+                                    spacing={1}
+                                  >
+                                    <Typography
+                                      variant="h6"
+                                      component="h3"
+                                    >
+                                      {
+                                        householdObject.name
+                                      }
+                                    </Typography>
+
+                                    {isSelected && (
+                                      <Chip
+                                        icon={
+                                          <CheckCircleIcon />
+                                        }
+                                        label="Ausgewählt"
+                                        color="primary"
+                                        size="small"
+                                      />
+                                    )}
+                                  </Stack>
+
+                                  <Divider />
+
+                                  <Typography
+                                    variant="body2"
+                                    color="text.secondary"
+                                  >
+                                    {householdObject.description ||
+                                      "Keine Beschreibung"}
+                                  </Typography>
+
+                                  <Typography variant="body2">
+                                    <strong>
+                                      Hersteller:
+                                    </strong>{" "}
+                                    {householdObject.manufacturer ||
+                                      "-"}
+                                  </Typography>
+
+                                  <Typography variant="body2">
+                                    <strong>
+                                      Modell:
+                                    </strong>{" "}
+                                    {householdObject.model ||
+                                      "-"}
+                                  </Typography>
+
+                                  <Typography variant="body2">
+                                    <strong>
+                                      Kaufdatum:
+                                    </strong>{" "}
+                                    {householdObject.purchaseDate ||
+                                      "-"}
+                                  </Typography>
+                                </Stack>
+                              </CardContent>
+                            </CardActionArea>
+
+                            <CardActions>
+                              <Button
+                                size="small"
+                                startIcon={
+                                  <EditIcon />
+                                }
+                                onClick={() =>
+                                  handleEditHouseholdObject(
+                                    householdObject
+                                  )
+                                }
+                              >
+                                Bearbeiten
+                              </Button>
+
+                              <Button
+                                size="small"
+                                color="error"
+                                startIcon={
+                                  <DeleteIcon />
+                                }
+                                onClick={() =>
+                                  handleDeleteHouseholdObject(
+                                    householdObject.id
+                                  )
+                                }
+                              >
+                                Löschen
+                              </Button>
+                            </CardActions>
+                          </>
+                        )}
+                      </Card>
+                    );
+                  }
                 )}
-
-                <hr />
-              </div>
-            )
-          )}
-        </>
-      )}
-
-      <h3>
-        Objekt für Wartung auswählen
-      </h3>
-
-      <select
-        value={selectedObjectId ?? ""}
-        onChange={(event) => {
-          const value =
-            event.target.value;
-
-          if (value === "") {
-            onSelectObject(null);
-            return;
-          }
-
-          onSelectObject(
-            Number(value)
-          );
-        }}
-      >
-        <option value="">
-          Objekt auswählen
-        </option>
-
-        {householdObjects.map(
-          (householdObject) => (
-            <option
-              key={
-                householdObject.id
-              }
-              value={
-                householdObject.id
-              }
-            >
-              {householdObject.name}
-            </option>
-          )
+              </Box>
+            )}
+          </>
         )}
-      </select>
-
-      <h3>Neues Objekt anlegen</h3>
-
-      <form
-        onSubmit={
-          handleCreateHouseholdObject
-        }
-      >
-        <div>
-          <label htmlFor="objectName">
-            Name
-          </label>
-
-          <input
-            id="objectName"
-            type="text"
-            value={objectName}
-            onChange={(event) =>
-              setObjectName(
-                event.target.value
-              )
-            }
-            required
-          />
-        </div>
-
-        <div>
-          <label htmlFor="objectDescription">
-            Beschreibung
-          </label>
-
-          <input
-            id="objectDescription"
-            type="text"
-            value={objectDescription}
-            onChange={(event) =>
-              setObjectDescription(
-                event.target.value
-              )
-            }
-          />
-        </div>
-
-        <div>
-          <label htmlFor="objectManufacturer">
-            Hersteller
-          </label>
-
-          <input
-            id="objectManufacturer"
-            type="text"
-            value={objectManufacturer}
-            onChange={(event) =>
-              setObjectManufacturer(
-                event.target.value
-              )
-            }
-          />
-        </div>
-
-        <div>
-          <label htmlFor="objectModel">
-            Modell
-          </label>
-
-          <input
-            id="objectModel"
-            type="text"
-            value={objectModel}
-            onChange={(event) =>
-              setObjectModel(
-                event.target.value
-              )
-            }
-          />
-        </div>
-
-        <div>
-          <label htmlFor="objectPurchaseDate">
-            Kaufdatum
-          </label>
-
-          <input
-            id="objectPurchaseDate"
-            type="date"
-            value={objectPurchaseDate}
-            onChange={(event) =>
-              setObjectPurchaseDate(
-                event.target.value
-              )
-            }
-          />
-        </div>
-
-        <button type="submit">
-          Objekt anlegen
-        </button>
-      </form>
-    </section>
+      </Stack>
+    </Paper>
   );
 }
 

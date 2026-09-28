@@ -12,6 +12,7 @@ import digitales_hausbuch_backend.room.RoomRepository;
 import digitales_hausbuch_backend.user.User;
 import digitales_hausbuch_backend.user.UserRepository;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 
 import java.time.LocalDate;
@@ -393,6 +394,48 @@ public class MaintenanceTaskService {
                 record.getNote(),
                 record.getMaintenanceTask().getId()
         );
+    }
+
+    @Transactional
+    public void deleteMaintenanceTask(
+            Long propertyId,
+            Long roomId,
+            Long objectId,
+            Long taskId,
+            String userEmail
+    ) {
+        HouseholdObject householdObject =
+                getOwnedHouseholdObject(
+                        propertyId,
+                        roomId,
+                        objectId,
+                        userEmail
+                );
+
+        MaintenanceTask task =
+                maintenanceTaskRepository
+                        .findByIdAndHouseholdObject(
+                                taskId,
+                                householdObject
+                        )
+                        .orElseThrow(
+                                () -> new MaintenanceTaskNotFoundException(
+                                        "Wartungsaufgabe nicht gefunden."
+                                )
+                        );
+
+        deleteMaintenanceTaskWithHistory(task);
+    }
+
+    @Transactional
+    public void deleteMaintenanceTaskWithHistory(
+            MaintenanceTask task
+    ) {
+        maintenanceRecordRepository
+                .deleteByMaintenanceTask(task);
+
+        maintenanceTaskRepository
+                .delete(task);
     }
 
 

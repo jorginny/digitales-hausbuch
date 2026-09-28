@@ -1,8 +1,13 @@
 package digitales_hausbuch_backend.property;
 
+import digitales_hausbuch_backend.room.Room;
+import digitales_hausbuch_backend.room.RoomRepository;
+import digitales_hausbuch_backend.room.RoomService;
 import digitales_hausbuch_backend.user.User;
 import digitales_hausbuch_backend.user.UserRepository;
 import org.springframework.stereotype.Service;
+
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
@@ -11,13 +16,19 @@ public class PropertyService {
 
     private final PropertyRepository propertyRepository;
     private final UserRepository userRepository;
+    private final RoomRepository roomRepository;
+    private final RoomService roomService;
 
     public PropertyService(
             PropertyRepository propertyRepository,
-            UserRepository userRepository) {
-
+            UserRepository userRepository,
+            RoomRepository roomRepository,
+            RoomService roomService
+    ) {
         this.propertyRepository = propertyRepository;
         this.userRepository = userRepository;
+        this.roomRepository = roomRepository;
+        this.roomService = roomService;
     }
 
     public PropertyResponse createProperty(
@@ -127,5 +138,55 @@ public class PropertyService {
                         property.getCreatedAt()
                 ))
                 .toList();
+    }
+
+    @Transactional
+    public void deleteProperty(
+            Long propertyId,
+            String userEmail
+    ) {
+        Property property =
+                getOwnedProperty(
+                        propertyId,
+                        userEmail
+                );
+
+        List<Room> rooms =
+                roomRepository
+                        .findByProperty(property);
+
+        for (Room room : rooms) {
+            roomService
+                    .deleteRoomWithDependencies(
+                            room
+                    );
+        }
+
+        propertyRepository.delete(property);
+    }
+
+    private Property getOwnedProperty(
+            Long propertyId,
+            String userEmail
+    ) {
+        User owner =
+                userRepository
+                        .findByEmail(userEmail)
+                        .orElseThrow(() ->
+                                new IllegalArgumentException(
+                                        "Benutzer wurde nicht gefunden."
+                                )
+                        );
+
+        return propertyRepository
+                .findByIdAndOwner(
+                        propertyId,
+                        owner
+                )
+                .orElseThrow(() ->
+                        new PropertyNotFoundException(
+                                "Immobilie wurde nicht gefunden."
+                        )
+                );
     }
 }

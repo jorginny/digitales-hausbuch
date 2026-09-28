@@ -136,5 +136,24 @@ public class MaintenanceTaskController {
         return ResponseEntity.ok(history);
     }
 
+    @DeleteMapping("/{taskId}")
+    public ResponseEntity<Void> deleteMaintenanceTask(
+            @PathVariable Long propertyId,
+            @PathVariable Long roomId,
+            @PathVariable Long objectId,
+            @PathVariable Long taskId,
+            Authentication authentication
+    ) {
+        maintenanceTaskService.deleteMaintenanceTask(
+                propertyId,
+                roomId,
+                objectId,
+                taskId,
+                authentication.getName()
+        );
+
+        return ResponseEntity.noContent().build();
+    }
+
 
 }

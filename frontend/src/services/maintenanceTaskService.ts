@@ -180,4 +180,26 @@ export async function getMaintenanceHistory(
             throw new Error( "Wartungshistorie konnte nicht geladen werden." ); 
         } 
         
-        return response.json(); }
+        return response.json(); 
+    }
+
+export async function deleteMaintenanceTask(
+  propertyId: number,
+  roomId: number,
+  objectId: number,
+  taskId: number
+): Promise<void> {
+  const response = await fetch(
+    `http://localhost:8080/api/properties/${propertyId}/rooms/${roomId}/objects/${objectId}/maintenance-tasks/${taskId}`,
+    {
+      method: "DELETE",
+      credentials: "include",
+    }
+  );
+
+  if (!response.ok) {
+    throw new Error(
+      "Wartungsaufgabe konnte nicht gelöscht werden."
+    );
+  }
+}

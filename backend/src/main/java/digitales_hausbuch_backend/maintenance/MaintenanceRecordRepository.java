@@ -11,4 +11,12 @@ public interface MaintenanceRecordRepository
     findByMaintenanceTaskOrderByCompletedAtDesc(
             MaintenanceTask maintenanceTask
     );
+
+    void deleteByMaintenanceTask(
+            MaintenanceTask maintenanceTask
+    );
+
+    boolean existsByMaintenanceTask_Id(
+            Long maintenanceTaskId
+    );
 }
