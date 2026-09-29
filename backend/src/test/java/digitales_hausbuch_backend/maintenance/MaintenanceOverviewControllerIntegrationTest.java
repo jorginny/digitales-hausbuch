@@ -50,8 +50,12 @@ class MaintenanceOverviewControllerIntegrationTest {
     @Autowired
     private UserRepository userRepository;
 
+    @Autowired
+    private MaintenanceRecordRepository maintenanceRecordRepository;
+
     @BeforeEach
     void cleanUp() {
+        maintenanceRecordRepository.deleteAll();
         maintenanceTaskRepository.deleteAll();
         householdObjectRepository.deleteAll();
         roomRepository.deleteAll();

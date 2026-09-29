@@ -1,5 +1,10 @@
 package digitales_hausbuch_backend.property;
 
+import digitales_hausbuch_backend.householdobject.HouseholdObject;
+import digitales_hausbuch_backend.householdobject.HouseholdObjectRepository;
+import digitales_hausbuch_backend.maintenance.MaintenanceRecordRepository;
+import digitales_hausbuch_backend.maintenance.MaintenanceTaskRepository;
+import digitales_hausbuch_backend.room.RoomRepository;
 import digitales_hausbuch_backend.user.UserRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -34,8 +39,24 @@ class PropertyControllerIntegrationTest {
     @Autowired
     private UserRepository userRepository;
 
+    @Autowired
+    private MaintenanceRecordRepository maintenanceRecordRepository;
+
+    @Autowired
+    private MaintenanceTaskRepository maintenanceTaskRepository;
+
+    @Autowired
+    private HouseholdObjectRepository householdObjectRepository;
+
+    @Autowired
+    private RoomRepository roomRepository;
+
     @BeforeEach
-    void setUp() {
+    void cleanDatabase() {
+        maintenanceRecordRepository.deleteAll();
+        maintenanceTaskRepository.deleteAll();
+        householdObjectRepository.deleteAll();
+        roomRepository.deleteAll();
         propertyRepository.deleteAll();
         userRepository.deleteAll();
     }

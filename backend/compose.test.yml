@@ -1,0 +1,16 @@
+services:
+  postgres-test:
+    image: postgres:16
+    ports:
+      - "127.0.0.1:5433:5432"
+    environment:
+      POSTGRES_DB: digitales_hausbuch_test
+      POSTGRES_USER: hausbuch_test
+      POSTGRES_PASSWORD: local_test_only
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U hausbuch_test -d digitales_hausbuch_test"]
+      interval: 2s
+      timeout: 5s
+      retries: 15
+    tmpfs:
+      - /var/lib/postgresql/data
