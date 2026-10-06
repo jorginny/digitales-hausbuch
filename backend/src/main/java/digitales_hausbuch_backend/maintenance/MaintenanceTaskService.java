@@ -18,6 +18,14 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDate;
 import java.util.List;
 
+/**
+ * Provides the business logic for maintenance tasks and their history.
+ *
+ * <p>The service verifies ownership through the complete hierarchy
+ * Property -> Room -> HouseholdObject before accessing a task. It also
+ * handles recurrence validation, completion, history creation, overview
+ * queries and deletion of dependent maintenance records.</p>
+ */
 @Service
 public class MaintenanceTaskService {
 
@@ -219,6 +227,21 @@ public class MaintenanceTaskService {
         return toResponse(savedTask);
     }
 
+    /**
+     * Marks a maintenance task as completed and stores a history record.
+     *
+     * <p>For recurring tasks, the next due date is calculated from the
+     * previous due date and the task remains open. One-time tasks are
+     * marked as completed.</p>
+     *
+     * @param propertyId ID of the property containing the task
+     * @param roomId ID of the room containing the household object
+     * @param objectId ID of the household object
+     * @param taskId ID of the maintenance task
+     * @param note optional note stored in the maintenance history
+     * @param userEmail email address of the authenticated user
+     * @return the updated maintenance task
+     */
     public MaintenanceTaskResponse completeMaintenanceTask(
             Long propertyId,
             Long roomId,
@@ -299,6 +322,15 @@ public class MaintenanceTaskService {
         return toResponse(savedTask);
     }
 
+    /**
+     * Returns all open maintenance tasks of a property for the authenticated owner.
+     * The repository query sorts dated tasks by due date and places tasks without
+     * a due date at the end.
+     *
+     * @param propertyId ID of the property
+     * @param userEmail email address of the authenticated user
+     * @return open maintenance tasks including room and object information
+     */
     public List<MaintenanceOverviewResponse> getOpenMaintenanceTasks(
             Long propertyId,
             String userEmail
@@ -350,6 +382,18 @@ public class MaintenanceTaskService {
         );
     }
 
+    /**
+     * Returns the completion history of a maintenance task in descending date order.
+     * Ownership of the complete resource hierarchy is checked before the history
+     * is read.
+     *
+     * @param propertyId ID of the property
+     * @param roomId ID of the room
+     * @param objectId ID of the household object
+     * @param taskId ID of the maintenance task
+     * @param userEmail email address of the authenticated user
+     * @return history records for the maintenance task
+     */
     public List<MaintenanceRecordResponse> getMaintenanceHistory(
             Long propertyId,
             Long roomId,
@@ -396,6 +440,17 @@ public class MaintenanceTaskService {
         );
     }
 
+    /**
+     * Deletes a maintenance task after verifying that it belongs to the
+     * authenticated user. Associated history records are removed first to
+     * preserve referential integrity.
+     *
+     * @param propertyId ID of the property
+     * @param roomId ID of the room
+     * @param objectId ID of the household object
+     * @param taskId ID of the maintenance task
+     * @param userEmail email address of the authenticated user
+     */
     @Transactional
     public void deleteMaintenanceTask(
             Long propertyId,
@@ -427,6 +482,12 @@ public class MaintenanceTaskService {
         deleteMaintenanceTaskWithHistory(task);
     }
 
+    /**
+     * Deletes all history records of a maintenance task before deleting the task.
+     * This helper is reused by higher-level hierarchical delete operations.
+     *
+     * @param task maintenance task to delete
+     */
     @Transactional
     public void deleteMaintenanceTaskWithHistory(
             MaintenanceTask task
