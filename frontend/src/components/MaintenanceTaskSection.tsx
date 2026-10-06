@@ -103,6 +103,13 @@ function getDueStatusColor(
   }
 }
 
+/**
+ * Manages the maintenance tasks of the currently selected household object.
+ *
+ * Supports creating, editing, completing and deleting tasks, displaying due
+ * status and recurrence information, and loading the corresponding maintenance
+ * history.
+ */
 function MaintenanceTaskSection({
   propertyId,
   selectedRoomId,
