@@ -36,6 +36,12 @@ type HouseholdObjectSectionProps = {
   onSelectObject: (objectId: number | null) => void;
 };
 
+/**
+ * Displays and manages the household objects of the currently selected room.
+ *
+ * The component coordinates object selection as well as create, update and
+ * delete operations and passes the selected object back to the parent page.
+ */
 function HouseholdObjectSection({
   propertyId,
   selectedRoomId,
