@@ -28,9 +28,7 @@ type DueStatus =
   | "Später"
   | "Kein Termin";
 
-function getDueStatus(
-  dueDate?: string
-): DueStatus {
+function getDueStatus(dueDate?: string): DueStatus {
   if (!dueDate) {
     return "Kein Termin";
   }
@@ -45,8 +43,7 @@ function getDueStatus(
     return "Überfällig";
   }
 
-  const thirtyDaysFromNow =
-    new Date(today);
+  const thirtyDaysFromNow = new Date(today);
 
   thirtyDaysFromNow.setDate(
     thirtyDaysFromNow.getDate() + 30
@@ -61,11 +58,7 @@ function getDueStatus(
 
 function getStatusColor(
   status: DueStatus
-):
-  | "error"
-  | "warning"
-  | "success"
-  | "default" {
+): "error" | "warning" | "success" | "default" {
   switch (status) {
     case "Überfällig":
       return "error";
@@ -130,192 +123,203 @@ function MaintenanceOverviewPage() {
 
   if (loading) {
     return (
+      <Box
+        sx={{
+          display: "flex",
+          justifyContent: "center",
+          py: 6,
+        }}
+      >
+        <CircularProgress />
+      </Box>
+    );
+  }
+
+  return (
     <Box>
-        <Stack spacing={4}>
+      <Stack spacing={4}>
         <Stack
-            direction={{
+          direction={{
             xs: "column",
             sm: "row",
-            }}
-            spacing={2}
-            sx={{
+          }}
+          spacing={2}
+          sx={{
             justifyContent: "space-between",
             alignItems: {
-                xs: "flex-start",
-                sm: "center",
+              xs: "flex-start",
+              sm: "center",
             },
-            }}
+          }}
         >
-            <div>
+          <div>
             <Typography
-                variant="h4"
-                component="h1"
-                gutterBottom
+              variant="h4"
+              component="h1"
+              gutterBottom
             >
-                Wartungsübersicht
+              Wartungsübersicht
             </Typography>
 
             <Typography
-                variant="body1"
-                color="text.secondary"
+              variant="body1"
+              color="text.secondary"
             >
-                Alle offenen Wartungsaufgaben
-                der Immobilie auf einen Blick.
+              Alle offenen Wartungsaufgaben
+              der Immobilie auf einen Blick.
             </Typography>
-            </div>
+          </div>
 
-            {id && (
+          {id && (
             <Button
-                component={Link}
-                to={`/properties/${id}`}
-                variant="outlined"
-                startIcon={<ArrowBackIcon />}
+              component={Link}
+              to={`/properties/${id}`}
+              variant="outlined"
+              startIcon={<ArrowBackIcon />}
             >
-                Zur Immobilie
+              Zur Immobilie
             </Button>
-            )}
+          )}
         </Stack>
 
         {error && (
-            <Alert severity="error">
+          <Alert severity="error">
             {error}
-            </Alert>
+          </Alert>
         )}
 
         {!error && tasks.length === 0 && (
-            <Alert severity="success">
+          <Alert severity="success">
             Aktuell sind keine offenen
             Wartungsaufgaben vorhanden.
-            </Alert>
+          </Alert>
         )}
 
         {tasks.length > 0 && (
-            <Stack spacing={2}>
+          <Stack spacing={2}>
             {tasks.map((task) => {
-                const dueStatus =
+              const dueStatus =
                 getDueStatus(task.dueDate);
 
-                return (
+              return (
                 <Card
-                    key={task.taskId}
-                    variant="outlined"
+                  key={task.taskId}
+                  variant="outlined"
                 >
-                    <CardContent>
-                  <Stack spacing={2}>
-                    <Stack
-                      direction={{
-                        xs: "column",
-                        sm: "row",
-                      }}
-                      spacing={1}
-                      sx={{
-                        justifyContent:
-                          "space-between",
-                        alignItems: {
-                          xs: "flex-start",
-                          sm: "center",
-                        },
-                      }}
-                    >
+                  <CardContent>
+                    <Stack spacing={2}>
                       <Stack
-                        direction="row"
+                        direction={{
+                          xs: "column",
+                          sm: "row",
+                        }}
                         spacing={1}
                         sx={{
-                          alignItems: "center",
+                          justifyContent:
+                            "space-between",
+                          alignItems: {
+                            xs: "flex-start",
+                            sm: "center",
+                          },
                         }}
                       >
-                        <BuildIcon
-                          color="action"
-                        />
-
-                        <Typography
-                          variant="h6"
-                          component="h2"
+                        <Stack
+                          direction="row"
+                          spacing={1}
+                          sx={{
+                            alignItems: "center",
+                          }}
                         >
-                          {task.title}
-                        </Typography>
+                          <BuildIcon
+                            color="action"
+                          />
+
+                          <Typography
+                            variant="h6"
+                            component="h2"
+                          >
+                            {task.title}
+                          </Typography>
+                        </Stack>
+
+                        <Chip
+                          label={dueStatus}
+                          color={getStatusColor(
+                            dueStatus
+                          )}
+                          size="small"
+                        />
                       </Stack>
 
-                      <Chip
-                        label={dueStatus}
-                        color={getStatusColor(
-                          dueStatus
-                        )}
-                        size="small"
-                      />
-                    </Stack>
+                      <Divider />
 
-                    <Divider />
+                      <Box
+                        sx={{
+                          display: "grid",
+                          gridTemplateColumns: {
+                            xs: "1fr",
+                            sm: "repeat(2, 1fr)",
+                          },
+                          gap: 1.5,
+                        }}
+                      >
+                        <Typography variant="body2">
+                          <strong>Raum:</strong>{" "}
+                          {task.roomName}
+                        </Typography>
 
-                    <Box
-                      sx={{
-                        display: "grid",
-                        gridTemplateColumns: {
-                          xs: "1fr",
-                          sm: "repeat(2, 1fr)",
-                        },
-                        gap: 1.5,
-                      }}
-                    >
+                        <Typography variant="body2">
+                          <strong>Objekt:</strong>{" "}
+                          {task.objectName}
+                        </Typography>
+
+                        <Typography variant="body2">
+                          <strong>Fällig am:</strong>{" "}
+                          {task.dueDate ||
+                            "Kein Termin"}
+                        </Typography>
+
+                        <Typography variant="body2">
+                          <strong>
+                            Zuletzt erledigt:
+                          </strong>{" "}
+                          {task.completedAt || "-"}
+                        </Typography>
+                      </Box>
+
                       <Typography variant="body2">
-                        <strong>Raum:</strong>{" "}
-                        {task.roomName}
-                      </Typography>
-
-                      <Typography variant="body2">
-                        <strong>Objekt:</strong>{" "}
-                        {task.objectName}
-                      </Typography>
-
-                      <Typography variant="body2">
-                        <strong>Fällig am:</strong>{" "}
-                        {task.dueDate ||
-                          "Kein Termin"}
+                        <strong>
+                          Beschreibung:
+                        </strong>{" "}
+                        {task.description || "-"}
                       </Typography>
 
                       <Typography variant="body2">
                         <strong>
-                          Zuletzt erledigt:
+                          Wiederholung:
                         </strong>{" "}
-                        {task.completedAt || "-"}
+                        {task.recurrenceInterval &&
+                        task.recurrenceUnit
+                          ? `${
+                              task.recurrenceInterval
+                            } ${
+                              task.recurrenceUnit ===
+                              "MONTHS"
+                                ? "Monate"
+                                : "Jahre"
+                            }`
+                          : "Keine"}
                       </Typography>
-                    </Box>
-
-                    <Typography variant="body2">
-                      <strong>
-                        Beschreibung:
-                      </strong>{" "}
-                      {task.description || "-"}
-                    </Typography>
-
-                    <Typography variant="body2">
-                      <strong>
-                        Wiederholung:
-                      </strong>{" "}
-                      {task.recurrenceInterval &&
-                      task.recurrenceUnit
-                        ? `${
-                            task.recurrenceInterval
-                          } ${
-                            task.recurrenceUnit ===
-                            "MONTHS"
-                              ? "Monate"
-                              : "Jahre"
-                          }`
-                        : "Keine"}
-                    </Typography>
-                  </Stack>
-                </CardContent>
-              </Card>
-            );
-          })}
-        </Stack>
-      )}
-    </Stack>
-  </Box>
-);
-  }}
-
-  
+                    </Stack>
+                  </CardContent>
+                </Card>
+              );
+            })}
+          </Stack>
+        )}
+      </Stack>
+    </Box>
+  );
+}
 
 export default MaintenanceOverviewPage;
