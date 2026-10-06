@@ -34,6 +34,12 @@ type RoomSectionProps = {
   onSelectRoom: (roomId: number | null) => void;
 };
 
+/**
+ * Displays and manages the rooms of a property.
+ *
+ * The component handles room selection and the create, update and delete
+ * operations used by the property detail view.
+ */
 function RoomSection({
   propertyId,
   selectedRoomId,
