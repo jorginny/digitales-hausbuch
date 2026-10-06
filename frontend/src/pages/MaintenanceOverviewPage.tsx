@@ -28,6 +28,10 @@ type DueStatus =
   | "Später"
   | "Kein Termin";
 
+/**
+ * Classifies a due date for presentation in the maintenance overview.
+ * Dates within the next 30 days are considered soon due.
+ */
 function getDueStatus(dueDate?: string): DueStatus {
   if (!dueDate) {
     return "Kein Termin";
@@ -74,6 +78,10 @@ function getStatusColor(
   }
 }
 
+/**
+ * Displays all open maintenance tasks of a property in one central overview.
+ * Each task includes its room, household object, due status and recurrence.
+ */
 function MaintenanceOverviewPage() {
   const { id } = useParams();
 
