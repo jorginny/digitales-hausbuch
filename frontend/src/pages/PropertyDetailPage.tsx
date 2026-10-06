@@ -42,6 +42,13 @@ import {
   type PropertyResponse,
 } from "../services/propertyService";
 
+/**
+ * Central detail view of a property.
+ *
+ * Coordinates the selected room and household object and combines the room,
+ * household-object and maintenance-task sections. The page also supports
+ * editing and deleting the complete property.
+ */
 function PropertyDetailPage() {
   const { id } = useParams();
 
