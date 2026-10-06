@@ -16,6 +16,12 @@ import org.springframework.security.authentication.BadCredentialsException;
 import java.util.HashMap;
 import java.util.Map;
 
+/**
+ * Central exception handler for REST API errors.
+ *
+ * <p>Maps domain-specific exceptions and validation errors to appropriate
+ * HTTP status codes and consistent JSON error responses.</p>
+ */
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
