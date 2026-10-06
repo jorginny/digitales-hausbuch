@@ -6,6 +6,10 @@ type ProtectedRouteProps = {
   children: React.ReactNode;
 };
 
+/**
+ * Protects frontend routes by checking the current server-side session.
+ * Unauthenticated users are redirected to the login page.
+ */
 function ProtectedRoute({ children }: ProtectedRouteProps) {
   const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
 
