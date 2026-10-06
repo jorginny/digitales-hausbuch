@@ -11,6 +11,13 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
+/**
+ * Provides business logic for properties owned by application users.
+ *
+ * <p>Property access is always scoped to the authenticated owner. Deleting
+ * a property triggers an explicit bottom-up deletion of rooms, household
+ * objects, maintenance tasks and maintenance records.</p>
+ */
 @Service
 public class PropertyService {
 
@@ -140,6 +147,17 @@ public class PropertyService {
                 .toList();
     }
 
+    /**
+     * Deletes a property and all of its dependent data.
+     *
+     * <p>The property is first resolved for the authenticated owner. Rooms
+     * are then deleted through the service hierarchy so that nested objects,
+     * maintenance tasks and maintenance history are removed in an order that
+     * preserves referential integrity.</p>
+     *
+     * @param propertyId ID of the property
+     * @param userEmail email address of the authenticated user
+     */
     @Transactional
     public void deleteProperty(
             Long propertyId,
