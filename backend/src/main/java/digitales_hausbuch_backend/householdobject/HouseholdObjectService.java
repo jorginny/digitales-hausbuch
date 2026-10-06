@@ -17,6 +17,13 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
+/**
+ * Provides business logic for household objects assigned to rooms.
+ *
+ * <p>Operations validate the authenticated user's ownership through the
+ * Property -> Room hierarchy. Deletion also removes all maintenance tasks
+ * and their history records before the household object itself is deleted.</p>
+ */
 @Service
 public class HouseholdObjectService {
 
@@ -190,6 +197,15 @@ public class HouseholdObjectService {
     }
 
 
+    /**
+     * Deletes a household object after verifying ownership of the containing
+     * property and room.
+     *
+     * @param propertyId ID of the property
+     * @param roomId ID of the room
+     * @param objectId ID of the household object
+     * @param userEmail email address of the authenticated user
+     */
     @Transactional
     public void deleteHouseholdObject(
             Long propertyId,
@@ -248,6 +264,15 @@ public class HouseholdObjectService {
                 );
     }
 
+    /**
+     * Deletes all maintenance tasks and history records belonging to a
+     * household object before deleting the object itself.
+     *
+     * <p>This method is also used by room deletion so that dependent records
+     * are removed in the correct order.</p>
+     *
+     * @param householdObject household object to delete
+     */
     @Transactional
     public void deleteHouseholdObjectWithDependencies(
             HouseholdObject householdObject
