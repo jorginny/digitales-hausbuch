@@ -5,6 +5,12 @@ import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 
+/**
+ * Adapter between the application's user repository and Spring Security.
+ *
+ * <p>Users are resolved by their email address and converted into Spring
+ * Security UserDetails objects for authentication.</p>
+ */
 @Service
 public class CustomUserDetailsService implements UserDetailsService {
 
