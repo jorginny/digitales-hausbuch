@@ -20,6 +20,13 @@ import java.util.HashMap;
 import java.util.Map;
 import org.springframework.security.web.authentication.logout.SecurityContextLogoutHandler;
 
+/**
+ * REST controller for registration and session-based authentication.
+ *
+ * <p>After successful login, the authenticated SecurityContext is explicitly
+ * stored in the HTTP session. The browser then reuses the resulting JSESSIONID
+ * cookie for authenticated requests.</p>
+ */
 @RestController
 @RequestMapping("/api/auth")
 public class AuthController {
@@ -49,6 +56,15 @@ public class AuthController {
                 .build();
     }
 
+    /**
+     * Authenticates a user and persists the resulting SecurityContext in the
+     * HTTP session.
+     *
+     * @param request login credentials
+     * @param httpRequest current HTTP request
+     * @param httpResponse current HTTP response
+     * @return HTTP 200 after successful authentication
+     */
     @PostMapping("/login")
     public ResponseEntity<Void> login(
             @Valid @RequestBody LoginRequest request,
