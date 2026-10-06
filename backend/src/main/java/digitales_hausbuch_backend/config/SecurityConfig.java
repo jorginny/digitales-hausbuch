@@ -15,6 +15,17 @@ import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.ProviderManager;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
 
+/**
+ * Central Spring Security configuration for the application.
+ *
+ * <p>The application uses session-based authentication. Registration and login
+ * are publicly accessible, while all other endpoints require an authenticated
+ * session. CORS is restricted to the local React development server.</p>
+ *
+ * <p>For this prototype, CSRF protection is explicitly ignored for the REST
+ * endpoints used by the frontend. A production deployment should use a complete
+ * CSRF-token integration.</p>
+ */
 @Configuration
 public class SecurityConfig {
 
@@ -23,6 +34,14 @@ public class SecurityConfig {
         return new BCryptPasswordEncoder();
     }
 
+    /**
+     * Defines authorization rules, CORS handling and the CSRF exceptions used
+     * by the prototype REST API.
+     *
+     * @param http Spring Security HTTP configuration
+     * @return configured security filter chain
+     * @throws Exception if the security configuration cannot be built
+     */
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
 
