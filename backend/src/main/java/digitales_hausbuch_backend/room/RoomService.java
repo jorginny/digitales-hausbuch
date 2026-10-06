@@ -13,6 +13,13 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
+/**
+ * Provides business logic for rooms belonging to a property.
+ *
+ * <p>All operations are restricted to properties owned by the authenticated
+ * user. When a room is deleted, its household objects and all nested
+ * maintenance data are removed first.</p>
+ */
 @Service
 public class RoomService {
 
@@ -136,6 +143,14 @@ public class RoomService {
         return toResponse(savedRoom);
     }
 
+    /**
+     * Deletes a room after verifying that the containing property belongs
+     * to the authenticated user.
+     *
+     * @param propertyId ID of the property
+     * @param roomId ID of the room
+     * @param userEmail email address of the authenticated user
+     */
     @Transactional
     public void deleteRoom(
             Long propertyId,
@@ -190,6 +205,14 @@ public class RoomService {
                 );
     }
 
+    /**
+     * Deletes all household objects and their dependent maintenance data
+     * before deleting the room itself.
+     *
+     * <p>This helper is reused when an entire property is deleted.</p>
+     *
+     * @param room room to delete
+     */
     @Transactional
     public void deleteRoomWithDependencies(
             Room room
